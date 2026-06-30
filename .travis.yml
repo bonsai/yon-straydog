@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+  - 22
+
+install:
+  - npm install
+
+script:
+  - npm run build
+
+deploy:
+  provider: surge
+  project: ./dist
+  domain: straydog.surge.sh
+  skip_cleanup: true
+  on:
+    branch: main

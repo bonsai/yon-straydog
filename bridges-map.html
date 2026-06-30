@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>神保町 四橋マップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100dvh}
+#wrap{display:flex;flex-direction:column;height:100dvh}
+#top{padding:16px 20px;background:#0a0a0f;border-bottom:1px solid #222}
+#top h1{font-size:1.2rem;color:#ffd700}
+#top p{font-size:.8rem;color:#888;margin-top:2px}
+#map{flex:1;width:100%}
+#legend{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;background:#1a1a2e;border-top:1px solid #333}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:.75rem;color:#aaa}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#info{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;border-radius:16px 16px 0 0;padding:18px 20px;border-top:1px solid #ffd700;z-index:10;max-height:50vh;overflow-y:auto}
+#info-close{position:absolute;top:8px;right:12px;background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer}
+#info h2{color:#ffd700;font-size:1rem;margin-bottom:4px}
+#info .era{color:#4fc3f7;font-size:.8rem;margin-bottom:6px}
+#info .desc{color:#aaa;font-size:.85rem;line-height:1.6}
+#info .connect{color:#888;font-size:.8rem;margin-top:8px;padding:8px;background:#0a0a0f;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="top">
+    <h1>🌉 神保町 四橋</h1>
+    <p>水道橋・聖橋・神田橋・万世橋 — 4つの橋がつなぐ古層</p>
+  </div>
+  <div id="map"></div>
+  <div id="legend"></div>
+</div>
+<div id="info">
+  <button id="info-close">✕</button>
+  <h2 id="info-title"></h2>
+  <div id="info-era"></div>
+  <div id="info-desc"></div>
+  <div id="info-connect"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const BRIDGES = [
+  { id:'suido', name:'水道橋', era:'1620s〜 江戸初期／現橋 1930', lat:35.7020, lng:139.7560, icon:'🏗️', color:'#4fc3f7',
+    desc:'神田上水の水路橋として江戸初期に架けられた。現在の橋は1930年(昭和5年)架け替え。水道橋駅の名称にも残る。JR中央線の車窓から見える。',
+    connect:'「水を注ぐ」＝フェルメール『牛乳を注ぐ女』(1657)と同時代。江戸のインフラと西洋の静謐 — どちらも「日常に潜む美」を描く。' },
+  { id:'hijiri', name:'聖橋', era:'1927年 昭和2年', lat:35.6995, lng:139.7640, icon:'⛩️', color:'#ce93d8',
+    desc:'御茶ノ水駅近く、神田川に架かるアーチ橋。1927年(昭和2年)完成。ニコライ堂と湯島聖堂を結ぶことから「聖橋」と命名。アール・デコ様式の美しいデザイン。東京大空襲でも焼け残った。',
+    connect:'1927年＝クリムト『接吻』(1907)から20年後の日本。アール・デコ様式はウィーン分離派／アール・ヌーヴォーの影響下にある。' },
+  { id:'kanda', name:'神田橋', era:'1600s〜 江戸初期／現橋 1924', lat:35.6940, lng:139.7650, icon:'🏯', color:'#ffd700',
+    desc:'徳川家康の江戸入府以降、神田と江戸城を結ぶ重要橋梁として整備。外堀通りに架かる。江戸城の見附（城門）の一つ。1924年(大正13年)の現在の橋は関東大震災後に再建。',
+    connect:'江戸城と直結する橋＝「権力の象徴」。ロダン『考える人』(1881)の「考える」行為と、江戸の官僚機構の「思案」を重ねる。' },
+  { id:'mansei', name:'万世橋', era:'1911年 明治44年', lat:35.6993, lng:139.7670, icon:'🚃', color:'#ef5350',
+    desc:'1911年(明治44年)完成の煉瓦アーチ橋。かつて万世橋駅(のちの秋葉原駅)の一部として機能。橋脚に赤煉瓦の駅舎遺構が残る。現在は橋上に神田ふれあい広場。',
+    connect:'1911年＝『接吻』(1907)の4年後。煉瓦造りの洋風建築＝明治の西洋化。古書店街と同時代の橋。' }
+];
+
+const map = L.map('map', { zoomControl: true }).setView([35.698, 139.760], 14);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OSM &copy; CARTO'
+}).addTo(map);
+
+// Add Stray Dog route spots for reference
+const DOG_SPOTS = [
+  { name:'YON', lat:35.69598, lng:139.75765, color:'#ffd700' },
+  { name:'さぼうる', lat:35.69580, lng:139.75800, color:'#4caf50' },
+  { name:'響', lat:35.69412, lng:139.75954, color:'#888' },
+  { name:'神田橋公園', lat:35.69480, lng:139.76500, color:'#888' }
+];
+DOG_SPOTS.forEach(d => {
+  L.circleMarker([d.lat, d.lng], { radius:4, color:d.color, fillOpacity:0.6 }).addTo(map);
+});
+
+// Draw YON as a special marker
+L.marker([35.69598, 139.75765], {
+  icon: L.divIcon({ html:'<div style="background:#ffd700;width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:bold">Y</div>', className:'', iconSize:[20,20], iconAnchor:[10,10] })
+}).addTo(map);
+
+const markers = [];
+BRIDGES.forEach(b => {
+  const html = `<div style="width:36px;height:36px;border-radius:50%;background:${b.color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.4)">${b.icon}</div>`;
+  const marker = L.marker([b.lat, b.lng], {
+    icon: L.divIcon({ html, className:'', iconSize:[36,36], iconAnchor:[18,18] })
+  }).addTo(map);
+  marker.on('click', () => showInfo(b));
+  markers.push(marker);
+});
+
+// Fit bounds
+const group = L.featureGroup(markers);
+map.fitBounds(group.getBounds().pad(0.3));
+
+// Legend
+const leg = document.getElementById('legend');
+BRIDGES.forEach(b => {
+  const el = document.createElement('div');
+  el.className = 'leg-item';
+  el.innerHTML = `<span class="leg-dot" style="background:${b.color}"></span>${b.icon} ${b.name}`;
+  el.style.cursor = 'pointer';
+  el.onclick = () => {
+    map.setView([b.lat, b.lng], 16);
+    showInfo(b);
+  };
+  leg.appendChild(el);
+});
+// Dog spots ref in legend
+const sep = document.createElement('span');
+sep.style.cssText = 'color:#444;font-size:.7rem;margin:0 4px';
+sep.textContent = '|';
+leg.appendChild(sep);
+dog_ref = document.createElement('span');
+dog_ref.style.cssText = 'color:#666;font-size:.7rem';
+dog_ref.textContent = '● Stray Dog ルート';
+leg.appendChild(dog_ref);
+
+// Info panel
+function showInfo(b){
+  document.getElementById('info-title').textContent = `${b.icon} ${b.name}`;
+  document.getElementById('info-era').textContent = `📅 ${b.era}`;
+  document.getElementById('info-desc').textContent = b.desc;
+  document.getElementById('info-connect').innerHTML = `🔗 <b>古層接続</b>: ${b.connect}`;
+  document.getElementById('info').style.display = 'block';
+}
+document.getElementById('info-close').onclick = () => {
+  document.getElementById('info').style.display = 'none';
+};
+</script>
+</body>
+</html>
