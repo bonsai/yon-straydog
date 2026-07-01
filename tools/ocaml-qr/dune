@@ -1,3 +1,0 @@
-(executable
-  (name qrcli)
-  (libraries qrcode cmdliner))
