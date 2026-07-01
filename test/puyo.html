@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>ぷよぷよ テスト</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+h1{color:#ffd700;font-size:1rem;margin-bottom:12px}
+#puyo-canvas{margin-bottom:8px}
+.controls{color:#666;font-size:.7rem;display:flex;gap:16px;margin-top:4px}
+.back{color:#888;font-size:.75rem;margin-top:20px;text-decoration:none;border:1px solid #333;padding:6px 16px;border-radius:8px}
+</style>
+</head>
+<body>
+<h1>🧩 ぷよぷよ</h1>
+<div id="puyo-canvas"></div>
+<div class="controls">
+  <span>← → 移動</span>
+  <span>↑ 回転</span>
+  <span>↓ 落下</span>
+  <span>Space 即落</span>
+</div>
+<a class="back" href="../">← 戻る</a>
+<script type="module">
+import { startPuyoGame } from '../src/game/puyo-game.ts'
+import { createCanvas } from '../src/game/puyo/view.ts'
+import { useDogStore } from '../src/store.ts'
+
+// Mock store.completeSpot for standalone test
+const orig = useDogStore.getState().completeSpot
+useDogStore.setState({
+  completeSpot: (id) => { console.log('✅ スポット完了:', id); if (orig) orig(id) }
+})
+
+startPuyoGame(0)
+</script>
+</body>
+</html>

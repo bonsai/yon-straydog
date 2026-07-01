@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>音当て テスト</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+h1{color:#ffd700;font-size:1rem;margin-bottom:12px}
+#simon-canvas{margin-bottom:8px}
+.hint{color:#666;font-size:.7rem}
+.back{color:#888;font-size:.75rem;margin-top:20px;text-decoration:none;border:1px solid #333;padding:6px 16px;border-radius:8px}
+</style>
+</head>
+<body>
+<h1>🎵 音当て</h1>
+<div id="simon-canvas"></div>
+<div class="hint">光った順にタップ（Escで閉じる）</div>
+<a class="back" href="../">← 戻る</a>
+<script type="module">
+import { startSimon } from '../src/game/simon-game.ts'
+import { createSimonCanvas } from '../src/game/simon/view.ts'
+import { useDogStore } from '../src/store.ts'
+
+useDogStore.setState({
+  completeSpot: (id) => { console.log('✅ スポット完了:', id) }
+})
+
+startSimon()
+</script>
+</body>
+</html>

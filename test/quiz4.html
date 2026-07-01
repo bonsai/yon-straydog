@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>四字熟語クイズ テスト</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card{width:320px;background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:28px 24px;text-align:center}
+.icon{font-size:2rem;margin-bottom:8px}
+.q{color:#e0e0e0;font-size:1rem;margin-bottom:16px;line-height:1.7}
+.hint{color:#666;font-size:.75rem;margin-bottom:12px}
+input{width:80px;padding:14px;border-radius:12px;border:1px solid #444;background:#0a0a0f;color:#fff;font-size:1.3rem;text-align:center;outline:none;caret-color:#ffd700}
+input:focus{border-color:#ffd700}
+button{width:100%;padding:14px;margin-top:14px;background:#ffd700;color:#000;border:none;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+.fb{font-size:.85rem;margin-top:10px;min-height:1.4em}
+.back{color:#888;font-size:.75rem;margin-top:20px;text-decoration:none;border:1px solid #333;padding:6px 16px;border-radius:8px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">✍️</div>
+  <div id="q" class="q">□ に入る漢字は？<br><span style="font-size:1.8rem;color:#ffd700">一石□鳥</span></div>
+  <div id="hint" class="hint">📖 いっせきにちょう</div>
+  <input id="answer" type="text" placeholder="?" autocomplete="off">
+  <button id="submit">答える</button>
+  <div id="fb" class="fb"></div>
+</div>
+<a class="back" href="../">← 戻る</a>
+<script type="module">
+import { startQuiz4 } from '../src/game/quiz4-game.ts'
+import { useDogStore } from '../src/store.ts'
+
+useDogStore.setState({
+  completeSpot: (id) => { console.log('✅ スポット完了:', id) }
+})
+
+startQuiz4()
+</script>
+</body>
+</html>

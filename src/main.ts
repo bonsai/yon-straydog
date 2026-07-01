@@ -7,6 +7,7 @@ import { type Option, some, none, isNone, isSome, match } from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 import type { Spot } from './game/spots'
 import { SPOTS } from './game/spots'
+import { startSpotHub, registerGameStarters } from './game/hub'
 
 const DEBUG = new URLSearchParams(location.search).has('debug')
 
@@ -109,7 +110,7 @@ function finishIntroState(): void {
   }
 }
 
-let onIntroDone = () => showComplete()
+let onIntroDone = () => startSpotHub()
 
 // =====================================================
 // 4x4 JIGSAW PUZZLE
@@ -163,7 +164,7 @@ function start4x4Puzzle(): void {
   renderGrid()
 }
 
-let onPuzzleComplete = () => showComplete()
+let onPuzzleComplete = () => startSpotHub()
 
 // =====================================================
 // RESULT / COMPLETE
@@ -203,13 +204,12 @@ function showEl(id: string, display = 'flex'): void { const el = document.getEle
 // =====================================================
 document.addEventListener('DOMContentLoaded', async () => {
   if (DEBUG) {
-    const { setHooks, initDebug, startSpotHub } = await import('./debug')
+    const { setHooks, initDebug } = await import('./debug')
     setHooks({ switchScreen, showScreen, showComplete, start4x4Puzzle, hideEl, showEl })
-    onPuzzleComplete = startSpotHub
-    onIntroDone = startSpotHub
     initDebug()
   }
 
+  registerGameStarters()
   if (DEBUG) document.body.classList.add('debug')
 
   const { introDone } = useDogStore.getState()
