@@ -7,12 +7,13 @@ let animId: number | null = null
 let showIdx = 0
 let showTimer = 0
 let running = false
+let clearTimer = 0
 
 export function startSimon(): void {
   const el = document.getElementById('simon-game')
   if (!el) return; el.style.display = 'flex'
   state = generateSequence(createSimonState())
-  showIdx = 0; showTimer = 0; running = true
+  showIdx = 0; showTimer = 0; clearTimer = 0; running = true
   const canvas = createSimonCanvas()
   const wrap = document.getElementById('simon-canvas')
   if (wrap) { wrap.innerHTML = ''; wrap.appendChild(canvas) }
@@ -40,6 +41,13 @@ export function startSimon(): void {
       } else if (showTimer === 20) {
         state = { ...state, activeNote: null }; showIdx++; showTimer = 0
         if (showIdx >= state.sequence.length) state = { ...state, phase: 'input', activeNote: null }
+      }
+    }
+    if (state.phase === 'clear') {
+      clearTimer++
+      if (clearTimer === 40) {
+        closeSimon()
+        return
       }
     }
     const ctx = canvas.getContext('2d')

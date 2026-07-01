@@ -8,6 +8,7 @@ let animId: number | null = null
 let keys: Set<string> = new Set()
 let running = false
 let delay = 0
+let clearTimer = 0
 const INTERVAL = 28
 
 export function startPuyoGame(targetColor: number): void {
@@ -21,7 +22,7 @@ export function startPuyoGame(targetColor: number): void {
   if (!canvas) return
   const wrap = document.getElementById('puyo-canvas')
   if (wrap) { wrap.innerHTML = ''; wrap.appendChild(canvas) }
-  keys.clear(); delay = 0; running = true
+  keys.clear(); delay = 0; clearTimer = 0; running = true
   document.addEventListener('keydown', onKeyDown)
   document.addEventListener('keyup', onKeyUp)
   if (animId) cancelAnimationFrame(animId)
@@ -34,6 +35,13 @@ export function startPuyoGame(targetColor: number): void {
         else if (keys.has('ArrowRight')) state = movePiece(state, 1)
       }
       if (delay % INTERVAL === 0) state = tick(state)
+    }
+    if (state.phase === 'done') {
+      clearTimer++
+      if (clearTimer === 30) {
+        closePuyoGame()
+        return
+      }
     }
     const ctx = canvas.getContext('2d')
     if (ctx) drawFrame(ctx, state)

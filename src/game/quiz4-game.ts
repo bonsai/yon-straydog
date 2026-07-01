@@ -67,6 +67,13 @@ export function startQuiz4(): void {
   if (fb) fb.textContent = ''
   const btn = document.getElementById('quiz4-btn') as HTMLButtonElement | null
   if (btn) { btn.textContent = '答える'; btn.onclick = onSubmit; btn.disabled = false }
+  document.getElementById('quiz4-close')!.onclick = closeQuiz4
+  document.addEventListener('keydown', onQuizKeyDown)
+}
+
+function onQuizKeyDown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') closeQuiz4()
+  if (e.key === 'Enter') onSubmit()
 }
 
 function onSubmit(): void {
@@ -89,4 +96,5 @@ function onSubmit(): void {
 export function closeQuiz4(): void {
   const el = document.getElementById('quiz4-game')
   if (el) el.style.display = 'none'
+  document.removeEventListener('keydown', onQuizKeyDown)
 }

@@ -1,5 +1,0 @@
-app:
-  build:
-    image: node:22
-    dockerfile_path: Dockerfile
-  cached: true
