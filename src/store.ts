@@ -1,7 +1,4 @@
-import { create } from 'zustand'
-import type L from 'leaflet'
-import { type Option, none, some } from 'fp-ts/Option'
-import type { Spot, SpotId } from './game/spots'
+import type { SpotId } from './game/spots'
 
 export type AppScreen = 'intro' | 'puzzle4x4' | 'home' | 'map'
 
@@ -10,72 +7,58 @@ interface UserPos {
   lng: number
 }
 
-interface DogState {
+export interface DogState {
   appState: AppScreen
   completed: SpotId[]
   introDone: boolean
-  currentSpot: Option<Spot>
-  userPos: Option<UserPos>
-  map: L.Map | null
-  userMarker: L.CircleMarker | null
-  spotMarkers: L.Marker[]
-  gpsWatchId: number | null
+  currentSpot: { id: string; name: string; icon: string; hint: string } | null
+  userPos: UserPos | null
 }
 
 interface DogActions {
   setAppState: (s: AppScreen) => void
   completeSpot: (id: SpotId) => void
   setIntroDone: () => void
-  setCurrentSpot: (s: Option<Spot>) => void
-  setUserPos: (p: Option<UserPos>) => void
-  setMap: (m: L.Map | null) => void
-  setUserMarker: (m: L.CircleMarker | null) => void
-  setSpotMarkers: (ms: L.Marker[]) => void
-  setGpsWatchId: (id: number | null) => void
+  setCurrentSpot: (s: { id: string; name: string; icon: string; hint: string } | null) => void
+  setUserPos: (p: UserPos | null) => void
   reset: () => void
 }
 
-export const useDogStore = create<DogState & DogActions>((set) => ({
+const state: DogState = {
   appState: 'intro',
   completed: JSON.parse(localStorage.getItem('sd_completed') ?? '[]') as SpotId[],
   introDone: localStorage.getItem('sd_intro_done') === 'true',
-  currentSpot: none,
-  userPos: none,
-  map: null,
-  userMarker: null,
-  spotMarkers: [],
-  gpsWatchId: null,
+  currentSpot: null,
+  userPos: null,
+}
 
-  setAppState: (appState) => set({ appState }),
-
-  completeSpot: (id) =>
-    set((s) => {
-      const next = [...s.completed, id]
-      localStorage.setItem('sd_completed', JSON.stringify(next))
-      return { completed: next }
-    }),
-
-  setIntroDone: () => {
-    localStorage.setItem('sd_intro_done', 'true')
-    set({ introDone: true })
+const actions: DogActions = {
+  setAppState(appState) { state.appState = appState },
+  completeSpot(id) {
+    state.completed = [...state.completed, id]
+    localStorage.setItem('sd_completed', JSON.stringify(state.completed))
   },
-
-  setCurrentSpot: (currentSpot) => set({ currentSpot }),
-  setUserPos: (userPos) => set({ userPos }),
-  setMap: (map) => set({ map }),
-  setUserMarker: (userMarker) => set({ userMarker }),
-  setSpotMarkers: (spotMarkers) => set({ spotMarkers }),
-  setGpsWatchId: (gpsWatchId) => set({ gpsWatchId }),
-
-  reset: () => {
+  setIntroDone() {
+    localStorage.setItem('sd_intro_done', 'true')
+    state.introDone = true
+  },
+  setCurrentSpot(s) { state.currentSpot = s },
+  setUserPos(p) { state.userPos = p },
+  reset() {
     localStorage.removeItem('sd_completed')
     localStorage.removeItem('sd_intro_done')
     localStorage.removeItem('sd_4x4_done')
-    set({
-      appState: 'intro',
-      completed: [],
-      introDone: false,
-      currentSpot: none,
-    })
+    state.appState = 'intro'
+    state.completed = []
+    state.introDone = false
+    state.currentSpot = null
   },
-}))
+}
+
+export function getState(): DogState { return state }
+export function setState(partial: Partial<DogState>): void { Object.assign(state, partial) }
+
+export const useDogStore = {
+  getState: () => ({ ...state, ...actions }),
+  setState: (partial: Partial<DogState>) => Object.assign(state, partial),
+}

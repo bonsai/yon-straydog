@@ -3,13 +3,8 @@ import bgImage from '/gdog.png'
 import { useDogStore } from './store'
 import { INTRO_LINES } from './story/data'
 import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
-import { type Option, some, none, isNone, isSome, match } from 'fp-ts/Option'
-import { pipe } from 'fp-ts/function'
-import type { Spot } from './game/spots'
-import { SPOTS } from './game/spots'
-import { startSpotHub, registerGameStarters } from './game/hub'
 
-const DEBUG = new URLSearchParams(location.search).has('debug')
+import { startSpotHub, registerGameStarters } from './game/hub'
 
 // =====================================================
 // SCREEN TRANSITIONS
@@ -135,7 +130,7 @@ function start4x4Puzzle(): void {
       const col = t.currentPos % SIZE
       const div = document.createElement('div')
       div.className = 'p4-tile'
-      if (isSome(pState.selectedIdx) && pState.selectedIdx.value === i) div.classList.add('selected')
+      if (pState.selectedIdx !== null && pState.selectedIdx === i) div.classList.add('selected')
       if (t.currentPos === t.correctPos) div.classList.add('in-place')
       div.style.backgroundPosition = `${(col/3)*100}% ${(row/3)*100}%`
       div.dataset.idx = String(i); div.addEventListener('click', () => onTap(i)); grid.appendChild(div)
@@ -146,7 +141,7 @@ function start4x4Puzzle(): void {
   function onTap(idx: number): void {
     if (goBtn.classList.contains('show')) return
     pState = selectOrSwap(pState, idx); renderGrid()
-    if (isNone(pState.selectedIdx) && isSolved(pState)) onSolved()
+    if (pState.selectedIdx === null && isSolved(pState)) onSolved()
   }
 
   function onSolved(): void {
@@ -166,51 +161,13 @@ function start4x4Puzzle(): void {
 
 let onPuzzleComplete = () => startSpotHub()
 
-// =====================================================
-// RESULT / COMPLETE
-// =====================================================
-function showResult(spot: Spot): void {
-  const icon = document.getElementById('r-icon')
-  const title = document.getElementById('r-title')
-  const badge = document.getElementById('r-badge')
-  if (icon) icon.textContent = spot.icon
-  if (title) title.textContent = `${spot.name} クリア！`
-  if (badge) badge.textContent = spot.badge
-  showEl('result')
-  const btn = document.getElementById('r-btn')
-  if (btn) btn.textContent = useDogStore.getState().completed.length === SPOTS.length ? '🎉 ゴールへ！' : '🐾 つづける'
-}
-
-function showComplete(): void {
-  showEl('complete')
-  for (let i = 0; i < 40; i++) {
-    const c = document.createElement('div')
-    c.className = 'confetti'
-    c.style.left = Math.random() * 100 + '%'
-    c.style.background = ['#ffd700','#4caf50','#ff6b6b','#4fc3f7','#ce93d8'][Math.floor(Math.random()*5)]
-    c.style.width = (4 + Math.random() * 6) + 'px'
-    c.style.height = (4 + Math.random() * 6) + 'px'
-    c.style.animationDuration = (2 + Math.random() * 3) + 's'
-    c.style.animationDelay = Math.random() * 2 + 's'
-    document.body.appendChild(c); setTimeout(() => c.remove(), 5000)
-  }
-}
-
 function hideEl(id: string): void { const el = document.getElementById(id); if (el) el.style.display = 'none' }
-function showEl(id: string, display = 'flex'): void { const el = document.getElementById(id); if (el) el.style.display = display }
 
 // =====================================================
 // INIT
 // =====================================================
 document.addEventListener('DOMContentLoaded', async () => {
-  if (DEBUG) {
-    const { setHooks, initDebug } = await import('./debug')
-    setHooks({ switchScreen, showScreen, showComplete, start4x4Puzzle, hideEl, showEl })
-    initDebug()
-  }
-
   registerGameStarters()
-  if (DEBUG) document.body.classList.add('debug')
 
   const { introDone } = useDogStore.getState()
   if (introDone && localStorage.getItem('sd_4x4_done') === 'true') {

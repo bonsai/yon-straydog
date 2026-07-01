@@ -116,23 +116,6 @@
     <button class="btn" id="complete-btn" style="margin-top:16px">🏠 最初に戻る</button>
   </div>
 
-  <!-- ===== STORY MODE (mock story viewer) ===== -->
-  <div id="story-mode">
-    <div id="story-mode-card">
-      <div id="story-mode-head">
-        <span id="story-mode-icon"></span>
-        <span id="story-mode-title"></span>
-      </div>
-      <div id="story-mode-scroll">
-        <div id="story-mode-text"></div>
-      </div>
-      <div id="story-mode-foot">
-        <button id="story-mode-prev" class="btn hidden-btn">◀ 戻る</button>
-        <button id="story-mode-next" class="btn">次へ ▶</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ===== SPOT HUB ===== -->
   <div id="spot-hub" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:#0a0a0f;z-index:30;flex-direction:column;overflow:hidden">
     <div id="hub-top" style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #222;flex-shrink:0;gap:8px">
@@ -176,28 +159,7 @@
     </div>
   </div>
 
-  <!-- ===== DEBUG (outside screen stack) ===== -->
-  <button id="debug-btn" class="debug-only">🛠</button>
-  <div id="debug-panel" class="debug-only">
-    <h3>🛠 Debug Mode</h3>
-    <button class="dbtn gold" id="d-skip">⏭ スキップ（写真を撮る）</button>
-    <button class="dbtn gold" id="d-teleport">📍 現在地を次の駅に</button>
-    <button class="dbtn danger" id="d-complete-all">🏁 全部クリア</button>
-    <button class="dbtn danger" id="d-reset">🗑 リセット</button>
-    <hr style="border-color:#333;margin:6px 0">
-    <div id="d-spots" style="font-size:.65rem;margin-bottom:6px"></div>
-    <hr style="border-color:#333;margin:4px 0">
-    <button class="dbtn gold" id="d-story" style="margin-bottom:4px">📖 ストーリーモード</button>
-    <div style="color:#ffd700;font-size:.7rem;margin:4px 0">🎭 Mock Walk</div>
-    <button class="dbtn" id="d-step">➡ Step Forward</button>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">
-      <button class="dbtn" id="d-goto-s0" style="flex:1;min-width:60px">☕ s0</button>
-      <button class="dbtn" id="d-goto-s1" style="flex:1;min-width:60px">🔔 s1</button>
-      <button class="dbtn" id="d-goto-s2" style="flex:1;min-width:60px">🗽 s2</button>
-      <button class="dbtn" id="d-goto-s3" style="flex:1;min-width:60px">🎵 s3</button>
-    </div>
-    <div id="d-state" style="font-size:.6rem;color:#888;margin-top:4px"></div>
-  </div>
+
 
 </div>
 

@@ -1,6 +1,3 @@
-import { type Option, none, some, match } from 'fp-ts/Option'
-import { pipe } from 'fp-ts/function'
-
 export interface Tile {
   currentPos: number
   correctPos: number
@@ -8,7 +5,7 @@ export interface Tile {
 
 export interface PuzzleState {
   tiles: Tile[]
-  selectedIdx: Option<number>
+  selectedIdx: number | null
   moves: number
 }
 
@@ -29,12 +26,10 @@ const shuffleTiles = (tiles: Tile[]): Tile[] => {
   return tiles.map((t, i) => ({ ...t, currentPos: pos[i] }))
 }
 
-export const createPuzzleState = (shuffled: boolean): PuzzleState =>
-  pipe(
-    createInitialTiles(),
-    shuffled ? shuffleTiles : (t) => t,
-    (tiles) => ({ tiles, selectedIdx: none as Option<number>, moves: 0 })
-  )
+export const createPuzzleState = (shuffled: boolean): PuzzleState => {
+  const tiles = shuffled ? shuffleTiles(createInitialTiles()) : createInitialTiles()
+  return { tiles, selectedIdx: null, moves: 0 }
+}
 
 const swapTiles = (tiles: Tile[], a: number, b: number): Tile[] => {
   const next = [...tiles]
@@ -46,17 +41,12 @@ const swapTiles = (tiles: Tile[], a: number, b: number): Tile[] => {
 export const isSolved = (state: PuzzleState): boolean =>
   state.tiles.every(t => t.currentPos === t.correctPos)
 
-export const selectOrSwap = (state: PuzzleState, idx: number): PuzzleState =>
-  pipe(
-    state.selectedIdx,
-    match(
-      () => ({ ...state, selectedIdx: some(idx) }),
-      (prev) => prev === idx
-        ? { ...state, selectedIdx: none }
-        : {
-            tiles: swapTiles(state.tiles, prev, idx),
-            selectedIdx: none,
-            moves: state.moves + 1,
-          }
-    )
-  )
+export const selectOrSwap = (state: PuzzleState, idx: number): PuzzleState => {
+  if (state.selectedIdx === null) return { ...state, selectedIdx: idx }
+  if (state.selectedIdx === idx) return { ...state, selectedIdx: null }
+  return {
+    tiles: swapTiles(state.tiles, state.selectedIdx, idx),
+    selectedIdx: null,
+    moves: state.moves + 1,
+  }
+}
