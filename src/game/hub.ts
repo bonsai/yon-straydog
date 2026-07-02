@@ -145,9 +145,7 @@ function renderHub(): void {
   if (!grid) return
   const { completed } = useDogStore.getState()
 
-  const visible = SPOTS.filter(s => s.id === 's0' || s.id === 's1' || completed.includes(s.id) || isSpotUnlocked(s.id, completed))
-
-  grid.innerHTML = visible.map(s => {
+  grid.innerHTML = SPOTS.map(s => {
     const done = completed.includes(s.id)
     const locked = !done && !isSpotUnlocked(s.id, completed)
     return `<div class="hub-card ${done?'done':locked?'locked':'open'}" data-id="${s.id}" style="background:${locked?'#111':done?'#0a1a0a':'#1a1a2e'};border:1px solid ${locked?'#222':done?'#2a5a2a':'#333'};border-radius:12px;padding:12px;text-align:center;cursor:${locked?'default':'pointer'};opacity:${locked?'.4':'1'}">
