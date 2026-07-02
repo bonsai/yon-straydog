@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Stray Dog — 迷い犬を探して</title>
+  <script type="module" crossorigin src="./assets/index-D9XdOMqe.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cy7vVjHp.css">
+</head>
+<body>
+
+<div id="screen">
+
+  <!-- ===== 1. INTRO ===== -->
+  <div id="intro" class="screen active">
+    <div id="intro-bg"></div>
+    <button id="intro-skip">スキップ ▶▶</button>
+    <div id="intro-text-area"><div id="intro-text"></div></div>
+    <div class="bottom-bar">
+      <button id="intro-start" class="btn">タップして次へ</button>
+    </div>
+  </div>
+
+  <!-- ===== 2. ADVENTURE TEXT OVERLAY ===== -->
+  <div id="adventure-overlay">
+    <div id="adventure-text"></div>
+    <div id="adventure-choices" class="adv-choices">
+      <button id="adv-yes" class="adv-choice adv-choice-yes">はい</button>
+      <button id="adv-no" class="adv-choice adv-choice-no">いいえ</button>
+    </div>
+  </div>
+
+  <!-- ===== 3. 4×4 PUZZLE ===== -->
+  <div id="puzzle4">
+    <div id="puzzle4-card">
+      <div id="puzzle4-head">
+        <div>
+          <div id="puzzle4-title">🐕 写真をなおして</div>
+          <div id="puzzle4-hint">タップで選ぶ → もう一度タップで入れ替え</div>
+        </div>
+        <button id="puzzle4-close">✕</button>
+      </div>
+      <div id="puzzle4-body">
+        <div id="puzzle4-grid"></div>
+        <div id="puzzle4-status">操作: 0 回</div>
+        <div id="p4-solved-hint">
+          <div style="font-size:1.6rem;margin-bottom:4px">🐾</div>
+          「さぼうる の レインボウを さがせ」
+        </div>
+      </div>
+      <div id="puzzle4-foot">
+        <button id="p4-go" class="btn">さぼうるへ行く →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. SPOT HUB ===== -->
+  <div id="spot-hub">
+    <div id="hub-top">
+      <span id="hub-icon">🐕</span>
+      <span id="hub-title">Stray Dog</span>
+      <button id="hub-story-btn" class="hub-story-btn">📖</button>
+      <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
+      <div id="hub-balls">⚪⚪⚪</div>
+    </div>
+    <div id="hub-grid"></div>
+  </div>
+
+  <!-- ===== 5. STORY MODE ===== -->
+  <div id="story-mode">
+    <div id="story-mode-card">
+      <div id="story-mode-head">
+        <span id="story-mode-icon"></span>
+        <span id="story-mode-title"></span>
+      </div>
+      <div id="story-mode-scroll">
+        <div id="story-mode-text"></div>
+      </div>
+      <div id="story-mode-foot">
+        <button id="story-mode-prev" class="btn hidden-btn">◀ 戻る</button>
+        <button id="story-mode-next" class="btn">次へ ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 6. MAP ===== -->
+  <div id="map-wrap" class="screen">
+    <div id="map-top">
+      <h2>🐕 Stray Dog</h2>
+      <div class="prog debug-only">進捗 <span id="prog-num">0</span>/4</div>
+    </div>
+    <div id="map"></div>
+    <div id="bottom-sheet">
+      <div id="bs-handle"></div>
+      <div id="bs-title">到着しました</div>
+      <div id="bs-sub">📍 タップして謎を解く</div>
+      <div id="bs-desc">スマホで答えを入力しよう</div>
+      <div id="bs-loading"><div class="spinner"></div>位置情報を取得中...</div>
+      <button id="bs-btn" class="locked">謎を解く</button>
+    </div>
+  </div>
+
+  <!-- ===== TOOLBAR (game mode) ===== -->
+  <div id="toolbar">
+    <button id="tool-btn-memo" class="tool-btn" data-tool="memo">📝</button>
+    <button id="tool-btn-map" class="tool-btn" data-tool="map">🗺️</button>
+    <button id="tool-btn-camera" class="tool-btn" data-tool="camera">📷</button>
+    <button id="tool-btn-mic" class="tool-btn" data-tool="mic">🎤</button>
+  </div>
+
+  <!-- ===== TOOL: MEMO ===== -->
+  <div id="tool-memo" class="tool-overlay">
+    <div id="memo-head">
+      <span>📝 メモ</span>
+      <button id="memo-close">✕</button>
+    </div>
+    <textarea id="memo-textarea" placeholder="会話のメモをここに…"></textarea>
+  </div>
+
+  <!-- ===== TOOL: CAMERA ===== -->
+  <div id="tool-camera" class="tool-overlay">
+    <div id="camera-head">
+      <span>📷 カメラ</span>
+      <button id="camera-close">✕</button>
+    </div>
+    <video id="camera-video" autoplay playsinline></video>
+    <div id="camera-fallback">📷 カメラにアクセスできません</div>
+  </div>
+
+  <!-- ===== TOOL: MIC ===== -->
+  <div id="tool-mic" class="tool-overlay">
+    <div id="mic-head">
+      <span>🎤 マイク</span>
+      <button id="mic-close">✕</button>
+    </div>
+    <div id="mic-body">
+      <div id="mic-indicator"></div>
+      <div id="mic-status">🎤 タップで録音開始</div>
+    </div>
+  </div>
+
+  <!-- ===== 6. MINI-GAMES ===== -->
+
+  <!-- 6a. PUYO -->
+  <div id="puyo-game">
+    <div id="puyo-canvas-wrap">
+      <div id="puyo-station-label"></div>
+      <div id="puyo-canvas"></div>
+      <div id="puyo-controls">
+        <span>← → 移動</span>
+        <span>↑ 回転</span>
+        <span>↓ 落下</span>
+        <span>Space 即落</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6b. SIMON -->
+  <div id="simon-game">
+    <div id="simon-canvas"></div>
+    <div id="simon-hint">光った順にタップ</div>
+  </div>
+
+  <!-- 6c. QUIZ4 -->
+  <div id="quiz4-game">
+    <button id="quiz4-close">✕</button>
+    <div id="quiz4-card">
+      <div id="quiz4-icon">✍️</div>
+      <div id="quiz4-q">□ に入る漢字は？<br><span id="quiz4-kanji">一石□鳥</span></div>
+      <div id="quiz4-hint">読みをヒントに漢字1文字を入力</div>
+      <input id="quiz4-input" type="text" placeholder="漢字1文字" autocomplete="off">
+      <button id="quiz4-btn">答える</button>
+      <div id="quiz4-fb"></div>
+    </div>
+  </div>
+
+  <!-- ===== 7. RESULT / BADGE ===== -->
+  <div id="result">
+    <div class="icon" id="r-icon">🐾</div>
+    <h2 id="r-title">見つけた！</h2>
+    <p class="sub" id="r-text">犬の足跡を発見した</p>
+    <div class="badge" id="r-badge">🏅 バッジ獲得</div>
+    <div class="badge-progress" id="r-progress"></div>
+    <button class="btn" id="r-btn">つづける</button>
+  </div>
+
+  <!-- ===== 8. DEBUG PANEL (#debug only) ===== -->
+  <div id="debug-panel">
+    <div id="debug-head">
+      <span>🐛 Debug</span>
+      <button id="debug-close">✕</button>
+    </div>
+    <div id="debug-body"></div>
+  </div>
+
+  <!-- ===== 9. COMPLETE ===== -->
+  <div id="complete">
+    <div class="icon" id="complete-icon">🐕</div>
+    <h2 id="complete-title">犬を見つけた！</h2>
+    <div id="complete-scroll">
+      <p id="complete-body">
+        足跡をたどって辿り着くと——<br>そこには犬がいた。
+      </p>
+      <div class="reward">
+        <h3>📞 夫妻に電話</h3>
+        <p>「見つかりましたよ。大丈夫です。」<br>電話の向こうで、妻の泣き声が聞こえた。</p>
+      </div>
+      <div class="reward dim">
+        <h3>🎵 Goldberg 層へ</h3>
+        <p>
+          犬は見つかった。<br>
+          だが——ここからが本番だ。<br>
+          YON 3F リビングミュージックで<br>
+          真空管アンプが待っている。
+        </p>
+      </div>
+      <div class="credits">
+        <p>🐾 制作: Stray Dog Team</p>
+        <p>🎹 Goldberg Variationen — J.S. Bach</p>
+        <p>📍 神保町・御茶ノ水エリアにて撮影</p>
+      </div>
+    </div>
+    <button class="btn" id="complete-btn">もう一度遊ぶ 🔄</button>
+  </div>
+
+</div>
+
+</body>
+</html>
