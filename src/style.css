@@ -43,8 +43,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 #puzzle4-hint{color:#666;font-size:.65rem}
 #puzzle4-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;gap:4px;overflow:hidden}
 #puzzle4-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:2px;width:min(80vw,320px);height:min(80vw,320px);background:#1a1a2e;padding:3px;border-radius:10px;border:1px solid #333;flex-shrink:0}
-.p4-tile{border-radius:4px;cursor:pointer;background-size:400% 400%;background-image:url(/gdog.png);filter:blur(8px);transition:filter .5s ease,box-shadow .12s,transform .08s}
-.p4-tile.in-place{filter:blur(0)}
+.p4-tile{border-radius:4px;cursor:pointer;background-size:400% 400%;background-image:url(/gdog.png);transition:box-shadow .12s,transform .08s}
 .p4-tile:active{transform:scale(.93)}
 .p4-tile.selected{box-shadow:0 0 0 3px #ffd700,0 0 14px rgba(255,215,0,.35);z-index:2}
 .p4-tile.solved-flash{animation:tFlash .4s ease-out}
@@ -145,3 +144,10 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 .adventure-btn:active{transform:scale(.96)}
 
 .hidden{display:none!important}
+
+/* ===== ADVENTURE CHOICES ===== */
+.adv-choices{display:flex;gap:16px;justify-content:center}
+.adv-choice{padding:14px 36px;border:none;border-radius:14px;font-size:1rem;font-weight:bold;cursor:pointer;transition:transform .1s;min-width:120px}
+.adv-choice:active{transform:scale(.96)}
+.adv-choice-yes{background:#ffd700;color:#000;box-shadow:0 4px 24px rgba(255,215,0,.2)}
+.adv-choice-no{background:#2a2a3e;color:#888;box-shadow:none}

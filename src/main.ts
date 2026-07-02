@@ -1,12 +1,23 @@
 import './style.css'
 import bgImage from '/gdog.png'
 import { useDogStore } from './store'
-import { INTRO_LINES, STORY_SCENES } from './story/data'
+import { STORY_SCENES } from './story/data'
 import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
 import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount } from './game/hub'
-import { setPhase } from './game/game-state'
-import { startMap, stopMap, setOnArrive } from './game/map'
+import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
+import { startAdventure } from './game/adventure'
+import { startMap, stopMap, setOnArrive, setForceMock } from './game/map'
 import { SPOTS } from './game/spots'
+
+function getId<T extends HTMLElement = HTMLElement>(id: string): T {
+  const el = document.getElementById(id) as T | null
+  if (!el) throw new Error(`Element #${id} not found`)
+  return el
+}
+
+function qs<T extends HTMLElement = HTMLElement>(sel: string, parent?: HTMLElement): T | null {
+  return (parent ?? document).querySelector<T>(sel)
+}
 
 // =====================================================
 // SCREEN TRANSITIONS
@@ -34,7 +45,7 @@ function showScreen(id: string): void {
 }
 
 // =====================================================
-// INTRO — Typewriter
+// INTRO
 // =====================================================
 function startIntro(): void {
   useDogStore.setState({ appState: 'intro' })
@@ -42,69 +53,41 @@ function startIntro(): void {
   showScreen('intro')
   if (useDogStore.getState().introDone) { finishIntroState(); return }
 
-  const textEl = document.getElementById('intro-text')!
-  const skipBtn = document.getElementById('intro-skip') as HTMLButtonElement
-  const startBtn = document.getElementById('intro-start') as HTMLButtonElement
-  const bgEl = document.getElementById('intro-bg')!
-  const bottomBar = document.querySelector('#intro .bottom-bar') as HTMLElement
+  const bgEl = getId('intro-bg')
+  bgEl.style.background = `url(${bgImage}) center/contain no-repeat #0a0a0f`
+  bgEl.classList.add('faded', 'visible')
+  bgEl.style.opacity = '1'
 
-  textEl.innerHTML = ''; startBtn.style.display = 'none'; bottomBar.style.display = 'none'
-  bgEl.style.background = '#0a0a0f'
+  const textEl = getId('intro-text')
+  const skipBtn = getId<HTMLElement>('intro-skip')
+  const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
+  textEl.style.display = 'none'
+  skipBtn.style.display = 'none'
+  if (bottomBar) bottomBar.style.display = 'none'
 
-  let lineIdx = 0, charIdx = 0, cancelled = false
-  const preload = new Image(); preload.src = bgImage
-
-  skipBtn.onclick = () => {
-    cancelled = true; textEl.innerHTML = ''
-    for (const line of INTRO_LINES) {
-      if (!line.text) { textEl.appendChild(document.createElement('br')); continue }
-      const p = document.createElement('p')
-      if (line.color) p.style.color = line.color
-      p.style.marginBottom = '4px'; p.textContent = line.text; textEl.appendChild(p)
-    }
-    revealImage()
-  }
-
-  function typeNextLine(): void {
-    if (cancelled) return
-    if (lineIdx >= INTRO_LINES.length) { revealImage(); return }
-    const line = INTRO_LINES[lineIdx]
-    if (!line.text) { textEl.appendChild(document.createElement('br')); lineIdx++; setTimeout(typeNextLine, line.speed); return }
-    const p = document.createElement('p')
-    if (line.color) p.style.color = line.color
-    p.style.marginBottom = '4px'; textEl.appendChild(p); charIdx = 0
-    const cursor = document.createElement('span'); cursor.className = 'cursor'; p.appendChild(cursor)
-    function typeChar(): void {
-      if (cancelled) return
-      if (charIdx >= line.text.length) { cursor.remove(); lineIdx++; setTimeout(typeNextLine, 300); return }
-      cursor.before(document.createTextNode(line.text[charIdx])); charIdx++
-      if (lineIdx === 10 && charIdx === 4) beginImageFade()
-      setTimeout(typeChar, line.speed + (Math.random() * 20 - 10))
-    }
-    typeChar()
-  }
-  function beginImageFade(): void { bgEl.style.backgroundImage = `url(${bgImage})`; bgEl.classList.add('faded'); requestAnimationFrame(() => bgEl.classList.add('visible')) }
-  function revealImage(): void {
-    bgEl.style.backgroundImage = `url(${bgImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1'
-    bottomBar.style.display = 'flex'; startBtn.style.display = 'block'
-    startBtn.onclick = () => { useDogStore.getState().setIntroDone(); switchScreen('intro', 'puzzle4'); start4x4Puzzle() }
-  }
-  typeNextLine()
+  const steps = buildIntroSteps(() => {
+    useDogStore.getState().setIntroDone()
+    switchScreen('intro', 'puzzle4')
+    start4x4Puzzle()
+  })
+  setSteps(steps)
+  startAdventure()
 }
 
 function finishIntroState(): void {
   const bgEl = document.getElementById('intro-bg')
-  const bottomBar = document.querySelector('#intro .bottom-bar') as HTMLElement | null
-  const startBtn = document.getElementById('intro-start') as HTMLButtonElement | null
   const skipBtn = document.getElementById('intro-skip')
   if (bgEl) { bgEl.style.backgroundImage = `url(${bgImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1' }
   if (skipBtn) skipBtn.style.display = 'none'
-  if (bottomBar) bottomBar.style.display = 'flex'
-  if (startBtn) {
-    startBtn.style.display = 'block'
-    startBtn.onclick = () => {
-      if (localStorage.getItem('sd_4x4_done') === 'true') { goToHub() } else { switchScreen('intro', 'puzzle4'); start4x4Puzzle() }
-    }
+  const textEl = document.getElementById('intro-text')
+  if (textEl) textEl.style.display = 'none'
+  const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
+  if (bottomBar) bottomBar.style.display = 'none'
+
+  if (localStorage.getItem('sd_4x4_done') === 'true') {
+    setTimeout(() => goToHub(), 100)
+  } else {
+    setTimeout(() => { switchScreen('intro', 'puzzle4'); start4x4Puzzle() }, 100)
   }
 }
 
@@ -114,10 +97,10 @@ function finishIntroState(): void {
 function start4x4Puzzle(): void {
   useDogStore.setState({ appState: 'puzzle4x4' })
   setPhase('puzzle')
-  const grid = document.getElementById('puzzle4-grid')!
-  const status = document.getElementById('puzzle4-status')!
-  const solvedHint = document.getElementById('p4-solved-hint')!
-  const goBtn = document.getElementById('p4-go') as HTMLButtonElement
+  const grid = getId('puzzle4-grid')
+  const status = getId('puzzle4-status')
+  const solvedHint = getId('p4-solved-hint')
+  const goBtn = getId<HTMLButtonElement>('p4-go')
   solvedHint.style.display = 'none'; goBtn.classList.remove('show')
 
   const SIZE = 4
@@ -156,8 +139,9 @@ function start4x4Puzzle(): void {
     }, 500)
   }
 
-  document.getElementById('puzzle4-close')?.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() })
-  goBtn.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() })
+  const closeBtn = document.getElementById('puzzle4-close')
+  closeBtn?.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() }, { once: true })
+  goBtn.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() }, { once: true })
   renderGrid()
 }
 
@@ -171,34 +155,12 @@ function onPuzzleComplete(): void {
 // =====================================================
 const SPOT_TO_SCENE: Record<string, number> = { s0: 1, s1: 2, s2: 3, s3: 4 }
 
-function showAdventureText(paragraphs: string[], lastBtn: string, onDone: () => void): void {
-  const overlay = document.getElementById('adventure-overlay')
-  const textEl = document.getElementById('adventure-text')
-  const btnEl = document.getElementById('adventure-btn')
-  if (!overlay || !textEl || !btnEl) { onDone(); return }
-
-  const paras = paragraphs.filter(p => p)
-  let idx = 0
-  overlay.style.display = 'flex'
-
-  function show(): void {
-    if (idx >= paras.length) {
-      overlay.style.display = 'none'
-      onDone()
-      return
-    }
-    textEl.textContent = paras[idx]
-    btnEl.textContent = idx < paras.length - 1 ? '次へ →' : lastBtn
-    btnEl.onclick = () => { idx++; show() }
-  }
-  show()
-}
-
 function startSpotMap(spotId: string): void {
   const spot = SPOTS.find(s => s.id === spotId)
   if (!spot) return
   setPhase('hub')
-  document.getElementById('spot-hub')!.style.display = 'none'
+  const spotHub = document.getElementById('spot-hub')
+  if (spotHub) spotHub.style.display = 'none'
   setOnArrive((arrivedSpot) => {
     if (arrivedSpot.id !== spotId) return
     stopMap()
@@ -213,7 +175,6 @@ function showClearedStory(spotId: string): void {
   const scene = STORY_SCENES[SPOT_TO_SCENE[spotId]]
   if (!scene) { goToHub(); return }
 
-  // Show badge obtained screen
   const spot = SPOTS.find(s => s.id === spotId)
   const badgeCount = useDogStore.getState().completed.length
   showResultScreen(
@@ -227,15 +188,15 @@ function showClearedStory(spotId: string): void {
 function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
   const r = document.getElementById('result')
   if (!r) return
-  document.getElementById('r-icon')!.textContent = icon
-  document.getElementById('r-title')!.textContent = title
-  document.getElementById('r-text')!.textContent = subtitle
-  document.getElementById('r-badge')!.textContent = `🏅 ${badge}`
+  getId('r-icon').textContent = icon
+  getId('r-title').textContent = title
+  getId('r-text').textContent = subtitle
+  getId('r-badge').textContent = `🏅 ${badge}`
   const store = useDogStore.getState()
   const bc = store.completed.length
-  document.getElementById('r-progress')!.textContent = `🟡 ${bc}/3`
+  getId('r-progress').textContent = `🟡 ${bc}/3`
   r.style.display = 'flex'
-  const btn = document.getElementById('r-btn')!
+  const btn = getId<HTMLButtonElement>('r-btn')
   btn.onclick = () => {
     r.style.display = 'none'
     const store = useDogStore.getState()
@@ -244,7 +205,9 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
       const paras = [...(STORY_SCENES[SPOT_TO_SCENE[nextSpot.id]]?.paragraphs.filter(p => p) ?? [])]
       paras.push('')
       paras.push(`🐾 ${nextSpot.icon} ${nextSpot.name} に\n犬がいるかも？`)
-      showAdventureText(paras, 'MAPを開く', () => startSpotMap(nextSpot.id))
+      const steps = buildStorySteps(nextSpot.icon, nextSpot.name, paras, () => startSpotMap(nextSpot.id), 'play', '地図を開くか？')
+      setSteps(steps)
+      startAdventure()
     } else {
       goToHub()
     }
@@ -285,6 +248,13 @@ function hideEl(id: string): void { const el = document.getElementById(id); if (
 document.addEventListener('DOMContentLoaded', async () => {
   registerGameStarters()
 
+  if (location.hash === '#debug') {
+    setForceMock(true)
+    const debugStyle = document.createElement('style')
+    debugStyle.textContent = '.debug-only{display:block!important}'
+    document.head.appendChild(debugStyle)
+  }
+
   // Wire hub card clicks
   const hubGrid = document.getElementById('hub-grid')
   if (hubGrid) {
@@ -297,7 +267,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (id === 's3' && getBadgeCount(useDogStore.getState().completed) >= 3) {
         useDogStore.getState().completeSpot('s3')
         const finalParas = STORY_SCENES[5].paragraphs.filter(p => p)
-        showAdventureText(finalParas, '🎉 ゴール！', () => showCompleteScreen())
+        const steps = buildStorySteps('🐕', '再会', finalParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
+        setSteps(steps)
+        startAdventure()
         return
       }
 
@@ -307,9 +279,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const sceneIdx = SPOT_TO_SCENE[id]
       if (sceneIdx !== undefined) {
         const scene = STORY_SCENES[sceneIdx]
-        showAdventureText(scene.paragraphs, '地図を見る →', () => {
-          startSpotMap(id)
-        })
+        const steps = buildStorySteps(scene.icon, scene.title, scene.paragraphs, () => startSpotMap(id), 'play', '地図を開くか？')
+        setSteps(steps)
+        startAdventure()
       }
     })
   }
@@ -319,7 +291,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const store = useDogStore.getState()
     if (store.completed.length >= SPOTS.length) {
       const finalParas = STORY_SCENES[5].paragraphs.filter(p => p)
-      showAdventureText(finalParas, '🎉 ゴール！', () => showCompleteScreen())
+      const steps = buildStorySteps('🐕', '再会', finalParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
+      setSteps(steps)
+      startAdventure()
     } else {
       showClearedStory(spotId)
     }

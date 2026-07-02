@@ -75,19 +75,21 @@ describe('game-state', () => {
   describe('buildHintSteps', () => {
     it('returns hint steps with play phase transition', () => {
       const steps = buildHintSteps('spot name', 'hint text', () => {})
-      expect(steps.length).toBe(3)
+      expect(steps.length).toBe(4)
+      expect(steps[steps.length - 1].type).toBe('action')
       expect(steps[steps.length - 1].nextPhase).toBe('play')
     })
   })
 
   describe('buildStorySteps', () => {
-    it('creates step for each non-empty paragraph plus action', () => {
+    it('creates step for each non-empty paragraph plus choice and action', () => {
       const paragraphs = ['p1', '', 'p2', 'p3']
       const steps = buildStorySteps('🐕', 'title', paragraphs, () => {}, 'hub')
-      expect(steps.length).toBe(4)
+      expect(steps.length).toBe(5)
       expect(steps[0].type).toBe('text')
-      expect(steps[3].type).toBe('action')
-      expect(steps[3].nextPhase).toBe('hub')
+      expect(steps[3].type).toBe('choice')
+      expect(steps[4].type).toBe('action')
+      expect(steps[4].nextPhase).toBe('hub')
     })
   })
 })

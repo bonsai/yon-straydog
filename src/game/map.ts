@@ -22,8 +22,21 @@ const DOG_ICON = L.divIcon({
   iconAnchor: [16, 16],
 })
 
+let forceMock = false
+
+export function setForceMock(v: boolean): void {
+  forceMock = v
+}
+
 export function setOnArrive(cb: (spot: Spot) => void): void {
   onArrive = cb
+}
+
+function isSpotUnlocked(id: string, completed: string[]): boolean {
+  if (id === 's0' || id === 's1') return true
+  if (id === 's2') return completed.includes('s0') && completed.includes('s1')
+  if (id === 's3') return SPOTS.filter(s => s.id !== 's3').every(s => completed.includes(s.id))
+  return false
 }
 
 export function startMap(arrivedIds: string[]): void {
@@ -41,8 +54,10 @@ export function startMap(arrivedIds: string[]): void {
     attribution: '© OpenStreetMap',
   }).addTo(map)
 
-  // Add spot markers
-  spotMarkers = SPOTS.filter(s => !arrivedSpots.has(s.id)).map(s => {
+  const accessible = SPOTS.filter(s => arrivedIds.includes(s.id) || isSpotUnlocked(s.id, arrivedIds))
+
+  // Add unlocked spot markers
+  spotMarkers = accessible.filter(s => !arrivedSpots.has(s.id)).map(s => {
     const marker = L.marker([s.lat, s.lng]).addTo(map!)
     marker.bindPopup(`<b>${s.icon} ${s.name}</b>`)
     return marker
@@ -61,8 +76,8 @@ export function startMap(arrivedIds: string[]): void {
   }).addTo(map)
   userMarker.bindPopup('📍 現在地')
 
-  // Dog marker (wanders between unvisited spots)
-  const unvisited = SPOTS.filter(s => !arrivedSpots.has(s.id))
+  // Dog marker (wanders between unvisited, accessible spots)
+  const unvisited = accessible.filter(s => !arrivedSpots.has(s.id))
   if (unvisited.length > 0) {
     const start = unvisited[Math.floor(Math.random() * unvisited.length)]
     dogMarker = L.marker([start.lat, start.lng], { icon: DOG_ICON, zIndexOffset: 1000 }).addTo(map)
@@ -99,13 +114,13 @@ export function stopMap(): void {
 }
 
 function startGPS(): void {
+  if (forceMock) { startMockGPS(); return }
   if ('geolocation' in navigator) {
     watchId = navigator.geolocation.watchPosition(
       onPosition,
       () => { startMockGPS() },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     )
-    // Timeout fallback to mock
     setTimeout(() => { if (!isMockMode && watchId !== null) startMockGPS() }, 8000)
   } else {
     startMockGPS()
@@ -124,7 +139,7 @@ function startMockGPS(): void {
 let mockStepIdx = 0
 
 function mockStep(): void {
-  const available = SPOTS.filter(s => !arrivedSpots.has(s.id))
+  const available = SPOTS.filter(s => !arrivedSpots.has(s.id) && isSpotUnlocked(s.id, [...arrivedSpots]))
   if (mockStepIdx >= available.length) mockStepIdx = 0
   const spot = available[mockStepIdx]
   if (!spot) return
