@@ -430,6 +430,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     startIntro()
   }
 
+  // Share button
+  document.getElementById('complete-share-btn')?.addEventListener('click', shareResult)
+
   // Complete button → restart
   document.getElementById('complete-btn')?.addEventListener('click', () => {
     hideEl('complete')
@@ -437,4 +440,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     useDogStore.getState().reset()
     startIntro()
   })
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  }
 })
+
+function shareResult(): void {
+  const text = [
+    '🐕 Stray Dog をクリアした！',
+    '',
+    '神保町を歩いて迷い犬を探すAR街歩きゲーム。',
+    '3つのバッジを集めて、犬を見つけ出した！',
+    '',
+    '#StrayDogYON #神保町',
+    '',
+    window.location.href,
+  ].join('\n')
+
+  if (navigator.share) {
+    navigator.share({ title: 'Stray Dog — 迷い犬を探して', text }).catch(() => {})
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('complete-share-btn')
+      if (btn) { btn.textContent = '✅ コピーした！'; setTimeout(() => { btn.textContent = '📤 シェアする' }, 2000) }
+    }).catch(() => {})
+  }
+}

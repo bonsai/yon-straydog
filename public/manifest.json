@@ -1,0 +1,14 @@
+{
+  "name": "Stray Dog — 迷い犬を探して",
+  "short_name": "Stray Dog",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "orientation": "portrait",
+  "description": "神保町を歩いて迷い犬を探すAR街歩きゲーム",
+  "icons": [
+    { "src": "/gdog.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/gdog.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}
