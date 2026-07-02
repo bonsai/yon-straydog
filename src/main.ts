@@ -7,7 +7,8 @@ import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleare
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
 import { startAdventure } from './story/adventure'
 import { setupStoryButtons, startStoryScene } from './story/story-mode'
-import { SPOTS } from './story/spots'
+import { SPOTS, type Spot, type SpotId } from './story/spots'
+import { startMap, setOnArrive, stopMap } from './map'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -154,26 +155,43 @@ function onPuzzleComplete(): void {
 // =====================================================
 // SPOT FLOW
 // =====================================================
+const SPOT_TO_SCENE: Record<SpotId, number> = { s0: 1, s1: 2, s2: 3, s3: 4 }
+
 function startSpotMap(spotId: string): void {
-  setPhase('hub')
+  setPhase('play')
   showTools(true)
+  const spot = SPOTS.find(s => s.id === spotId)
+  if (!spot) { goToHub(); return }
   const spotHub = document.getElementById('spot-hub')
   if (spotHub) spotHub.classList.remove('open')
-  startSpotFlow(spotId)
+  setCurrentGameSpot(spotId)
+  setOnArrive((s: Spot) => {
+    const starter = (window as any).__gameStarters?.[s.id]
+    if (starter) {
+      showTools(false)
+      starter()
+    }
+  })
+  startMap(useDogStore.getState().completed)
 }
 
 function showClearedStory(spotId: string): void {
-  const scene = STORY_SCENES[SPOT_TO_SCENE[spotId]]
+  const sceneIdx = SPOT_TO_SCENE[spotId]
+  const scene = STORY_SCENES[sceneIdx]
   if (!scene) { goToHub(); return }
-
   const spot = SPOTS.find(s => s.id === spotId)
   const badgeCount = useDogStore.getState().completed.length
-  showResultScreen(
-    spot?.badge ?? '🐾',
-    'バッジを獲得！',
-    spot?.badgeName ?? '',
-    `${badgeCount}/3 のヒント玉を収集`
-  )
+  const paras = scene.paragraphs.filter(p => p)
+  const steps = buildStorySteps(scene.icon, scene.title, paras, () => {
+    showResultScreen(
+      spot?.badge ?? '🐾',
+      'バッジを獲得！',
+      spot?.badgeName ?? '',
+      `${badgeCount}/3 のヒント玉を収集`
+    )
+  }, 'hub', 'つづける')
+  setSteps(steps)
+  startAdventure()
 }
 
 function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
@@ -191,13 +209,7 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
   const btn = getId<HTMLButtonElement>('r-btn')
   btn.onclick = () => {
     r.style.display = 'none'
-    const store = useDogStore.getState()
-    const nextSpot = SPOTS.find(s => !store.completed.includes(s.id))
-    if (nextSpot) {
-      startSpotMap(nextSpot.id)
-    } else {
-      goToHub()
-    }
+    goToHub()
   }
 }
 
@@ -230,6 +242,14 @@ function confetti(): void {
 }
 
 function hideEl(id: string): void { const el = document.getElementById(id); if (el) el.style.display = 'none' }
+
+function openStoryModal(idx: number): void {
+  startStoryScene(idx)
+}
+
+function enableDebugMode(): void {
+  document.querySelectorAll('.debug-only').forEach(el => (el as HTMLElement).classList.remove('debug-only'))
+}
 
 // =====================================================
 // DEBUG PANEL
@@ -327,8 +347,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (id === 's3' && getBadgeCount(useDogStore.getState().completed) >= 3) {
         useDogStore.getState().completeSpot('s3')
-        const finalParas = STORY_SCENES[5].paragraphs.filter(p => p)
-        const steps = buildStorySteps('🐕', '再会', finalParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
+        // 幕2-4: YON 3F story first, then final scene (幕3: 再会)
+        const spotScene = STORY_SCENES[4]
+        const finalScene = STORY_SCENES[5]
+        const allParas = [...spotScene.paragraphs.filter(p => p), '', ...finalScene.paragraphs.filter(p => p)]
+        const steps = buildStorySteps('🐕', '再会', allParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
         setSteps(steps)
         startAdventure()
         return
@@ -350,10 +373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setSteps(steps)
       startAdventure()
     } else {
-      setCurrentGameSpot(spotId)
-      showTools(false)
-      const starter = (window as any).__gameStarters?.[spotId]
-      if (starter) starter()
+      showClearedStory(spotId)
     }
   })
 
