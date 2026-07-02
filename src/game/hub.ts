@@ -1,6 +1,108 @@
 import { useDogStore } from '../store'
 import { SPOTS, BADGE_SPOTS } from './spots'
 
+const TOOLS_STORAGE_KEY = 'sd_memo'
+
+function getMemo(): string {
+  try { return localStorage.getItem(TOOLS_STORAGE_KEY) ?? '' }
+  catch { return '' }
+}
+
+function saveMemo(text: string): void {
+  localStorage.setItem(TOOLS_STORAGE_KEY, text)
+}
+
+let memoShown = false
+let cameraStream: MediaStream | null = null
+let micStream: MediaStream | null = null
+
+function stopCamera(): void {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null }
+}
+
+function stopMic(): void {
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null }
+  const s = document.getElementById('mic-status')
+  if (s) s.textContent = '🎤 タップで録音開始'
+  document.getElementById('mic-indicator')?.classList.remove('recording')
+}
+
+export function showTools(visible: boolean): void {
+  document.getElementById('toolbar')?.classList.toggle('open', visible)
+}
+
+function showMemo(): void {
+  const overlay = document.getElementById('tool-memo')
+  if (!overlay) return
+  memoShown = !memoShown
+  overlay.classList.toggle('open', memoShown)
+  if (memoShown) {
+    const ta = document.getElementById('memo-textarea') as HTMLTextAreaElement
+    if (ta) { ta.value = getMemo(); ta.focus() }
+  }
+}
+
+function showCamera(): void {
+  const overlay = document.getElementById('tool-camera')
+  if (!overlay) return
+  if (overlay.classList.contains('open')) { stopCamera(); overlay.classList.remove('open'); return }
+  overlay.classList.add('open')
+  const video = document.getElementById('camera-video') as HTMLVideoElement
+  if (!video) return
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => { cameraStream = stream; video.srcObject = stream })
+    .catch(() => { const fb = document.getElementById('camera-fallback'); if (fb) fb.style.display = 'block' })
+}
+
+function showMic(): void {
+  const overlay = document.getElementById('tool-mic')
+  if (!overlay) return
+  if (overlay.classList.contains('open')) { stopMic(); overlay.classList.remove('open'); return }
+  overlay.classList.add('open')
+  const status = document.getElementById('mic-status')
+  if (status) status.textContent = '🎤 録音中...'
+  document.getElementById('mic-indicator')?.classList.add('recording')
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => { micStream = stream; if (status) status.textContent = '🎤 録音中（タップで停止）' })
+    .catch(() => { if (status) status.textContent = '🎤 マイクが使えません'; document.getElementById('mic-indicator')?.classList.remove('recording') })
+}
+
+function cleanupTools(): void {
+  stopCamera(); stopMic()
+  ;['tool-memo','tool-camera','tool-mic'].forEach(id => document.getElementById(id)?.classList.remove('open'))
+  memoShown = false
+}
+
+export function setupTools(): void {
+  document.getElementById('tool-btn-memo')?.addEventListener('click', showMemo)
+  document.getElementById('tool-btn-map')?.addEventListener('click', () => {
+    const hub = document.getElementById('spot-hub')
+    const mapWrap = document.getElementById('map-wrap')
+    if (mapWrap?.style.display === 'flex') {
+      hub?.classList.add('open')
+      mapWrap.style.display = 'none'
+    } else {
+      cleanupTools()
+    }
+  })
+  document.getElementById('tool-btn-camera')?.addEventListener('click', showCamera)
+  document.getElementById('tool-btn-mic')?.addEventListener('click', showMic)
+
+  document.getElementById('memo-close')?.addEventListener('click', () => {
+    const ta = document.getElementById('memo-textarea') as HTMLTextAreaElement
+    if (ta) saveMemo(ta.value)
+    document.getElementById('tool-memo')?.classList.remove('open')
+    memoShown = false
+  })
+  document.getElementById('camera-close')?.addEventListener('click', () => {
+    stopCamera()
+    document.getElementById('tool-camera')?.classList.remove('open')
+    const fb = document.getElementById('camera-fallback')
+    if (fb) fb.style.display = 'none'
+  })
+  document.getElementById('mic-close')?.addEventListener('click', () => { stopMic(); document.getElementById('tool-mic')?.classList.remove('open') })
+}
+
 export let currentGameSpot: string | null = null
 export let onSpotCleared: ((spotId: string) => void) | null = null
 
@@ -70,9 +172,9 @@ function renderBadges(): void {
 export function startSpotHub(): void {
   const el = document.getElementById('spot-hub')
   if (!el) return
-  el.style.display = 'flex'
+  el.classList.add('open')
   const p4 = document.getElementById('puzzle4')
-  if (p4) p4.style.display = 'none'
+  if (p4) p4.classList.remove('active')
   renderHub()
 }
 

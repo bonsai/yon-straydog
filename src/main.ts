@@ -3,10 +3,11 @@ import bgImage from '/gdog.png'
 import { useDogStore } from './store'
 import { STORY_SCENES } from './story/data'
 import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
-import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount } from './game/hub'
+import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './game/hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
 import { startAdventure } from './game/adventure'
 import { startMap, stopMap, setOnArrive, setForceMock } from './game/map'
+import { setupStoryButtons, startStoryScene } from './game/story-mode'
 import { SPOTS } from './game/spots'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -51,6 +52,7 @@ function startIntro(): void {
   useDogStore.setState({ appState: 'intro' })
   setPhase('intro')
   showScreen('intro')
+  showTools(false)
   if (useDogStore.getState().introDone) { finishIntroState(); return }
 
   const bgEl = getId('intro-bg')
@@ -97,6 +99,7 @@ function finishIntroState(): void {
 function start4x4Puzzle(): void {
   useDogStore.setState({ appState: 'puzzle4x4' })
   setPhase('puzzle')
+  showTools(false)
   const grid = getId('puzzle4-grid')
   const status = getId('puzzle4-status')
   const solvedHint = getId('p4-solved-hint')
@@ -146,8 +149,7 @@ function start4x4Puzzle(): void {
 }
 
 function onPuzzleComplete(): void {
-  setPhase('hub')
-  startSpotHub()
+  goToHub()
 }
 
 // =====================================================
@@ -159,14 +161,29 @@ function startSpotMap(spotId: string): void {
   const spot = SPOTS.find(s => s.id === spotId)
   if (!spot) return
   setPhase('hub')
+  showTools(true)
   const spotHub = document.getElementById('spot-hub')
-  if (spotHub) spotHub.style.display = 'none'
+  if (spotHub) spotHub.classList.remove('open')
   setOnArrive((arrivedSpot) => {
     if (arrivedSpot.id !== spotId) return
     stopMap()
-    setCurrentGameSpot(spotId)
-    const starter = (window as any).__gameStarters?.[spotId]
-    if (starter) starter()
+    const sceneIdx = SPOT_TO_SCENE[spotId]
+    if (sceneIdx !== undefined) {
+      const scene = STORY_SCENES[sceneIdx]
+      const steps = buildStorySteps(scene.icon, scene.title, scene.paragraphs, () => {
+        setCurrentGameSpot(spotId)
+        showTools(false)
+        const starter = (window as any).__gameStarters?.[spotId]
+        if (starter) starter()
+      }, 'play', '謎を解くか？')
+      setSteps(steps)
+      startAdventure()
+    } else {
+      setCurrentGameSpot(spotId)
+      showTools(false)
+      const starter = (window as any).__gameStarters?.[spotId]
+      if (starter) starter()
+    }
   })
   startMap(useDogStore.getState().completed)
 }
@@ -186,6 +203,7 @@ function showClearedStory(spotId: string): void {
 }
 
 function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
+  showTools(false)
   const r = document.getElementById('result')
   if (!r) return
   getId('r-icon').textContent = icon
@@ -202,12 +220,7 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
     const store = useDogStore.getState()
     const nextSpot = SPOTS.find(s => !store.completed.includes(s.id))
     if (nextSpot) {
-      const paras = [...(STORY_SCENES[SPOT_TO_SCENE[nextSpot.id]]?.paragraphs.filter(p => p) ?? [])]
-      paras.push('')
-      paras.push(`🐾 ${nextSpot.icon} ${nextSpot.name} に\n犬がいるかも？`)
-      const steps = buildStorySteps(nextSpot.icon, nextSpot.name, paras, () => startSpotMap(nextSpot.id), 'play', '地図を開くか？')
-      setSteps(steps)
-      startAdventure()
+      startSpotMap(nextSpot.id)
     } else {
       goToHub()
     }
@@ -216,11 +229,13 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
 
 function goToHub(): void {
   setPhase('hub')
+  showTools(true)
   startSpotHub()
 }
 
 function showCompleteScreen(): void {
   setPhase('complete')
+  showTools(false)
   const el = document.getElementById('complete')
   if (el) el.style.display = 'flex'
   confetti()
@@ -243,17 +258,93 @@ function confetti(): void {
 function hideEl(id: string): void { const el = document.getElementById(id); if (el) el.style.display = 'none' }
 
 // =====================================================
+// DEBUG PANEL
+// =====================================================
+function renderDebugPanel(): void {
+  const body = document.getElementById('debug-body')
+  if (!body) return
+  const { completed } = useDogStore.getState()
+  const badgeCount = getBadgeCount(completed)
+
+  body.innerHTML = `
+    <div class="debug-state">
+      <div><span class="label">completed:</span> [${completed.join(', ') || '-'}]</div>
+      <div><span class="label">badges:</span> ${badgeCount}/3</div>
+      <div><span class="label">introDone:</span> ${localStorage.getItem('sd_intro_done') === 'true' ? '✅' : '❌'}</div>
+      <div><span class="label">4x4Done:</span> ${localStorage.getItem('sd_4x4_done') === 'true' ? '✅' : '❌'}</div>
+    </div>
+    ${SPOTS.map(s => {
+      const done = completed.includes(s.id)
+      const unlocked = s.id === 's0' || s.id === 's1' || completed.includes('s0') && completed.includes('s1') || done
+      const lockStatus = done ? 'done' : unlocked ? 'unlocked' : 'locked'
+      const gameLabel = { puyo: 'ぷよぷよ', simon: 'シモン', quiz4: 'クイズ', final: '最終' }[s.game]
+      return `<div class="debug-card">
+        <h3>${s.icon} ${s.name} <span class="tag ${lockStatus}">${lockStatus}</span></h3>
+        <div class="row"><span class="label">ID:</span> ${s.id}</div>
+        <div class="row"><span class="label">座標:</span> ${s.lat}, ${s.lng}</div>
+        <div class="row"><span class="label">ゲーム:</span> ${gameLabel}</div>
+        <div class="row"><span class="label">ヒント:</span> ${s.hint}</div>
+        <div class="row"><span class="label">ストーリー:</span> ${s.story}</div>
+        ${s.badge ? `<div class="row"><span class="label">バッジ:</span> ${s.badge} ${s.badgeName}</div>` : ''}
+        <div class="debug-actions">
+          ${s.game !== 'final' ? `<button class="btn-game" data-game="${s.id}">▶ ${gameLabel}</button>` : ''}
+          <button class="btn-story" data-scene="${SPOT_TO_SCENE[s.id]}">📖 ストーリー</button>
+        </div>
+      </div>`
+    }).join('')}
+  `
+
+  body.querySelectorAll('[data-game]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = (btn as HTMLElement).dataset.game
+      if (!id) return
+      const starter = (window as any).__gameStarters?.[id]
+      if (starter) {
+        document.getElementById('debug-panel')?.classList.remove('open')
+        setCurrentGameSpot(id)
+        starter()
+      }
+    })
+  })
+
+  body.querySelectorAll('[data-scene]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt((btn as HTMLElement).dataset.scene ?? '0', 10)
+      document.getElementById('debug-panel')?.classList.remove('open')
+      startStoryScene(idx)
+    })
+  })
+}
+
+// =====================================================
 // INIT
 // =====================================================
 document.addEventListener('DOMContentLoaded', async () => {
   registerGameStarters()
+  setupStoryButtons()
+  setupTools()
 
   if (location.hash === '#debug') {
     setForceMock(true)
     const debugStyle = document.createElement('style')
-    debugStyle.textContent = '.debug-only{display:block!important}'
+    debugStyle.textContent = '.debug-only{display:inline-block!important}'
     document.head.appendChild(debugStyle)
   }
+
+  // Wire story mode button
+  document.getElementById('hub-story-btn')?.addEventListener('click', () => {
+    showTools(false)
+    startStoryScene(0, () => showTools(true))
+  })
+
+  // Wire debug panel
+  document.getElementById('hub-debug-btn')?.addEventListener('click', () => {
+    renderDebugPanel()
+    document.getElementById('debug-panel')?.classList.add('open')
+  })
+  document.getElementById('debug-close')?.addEventListener('click', () => {
+    document.getElementById('debug-panel')?.classList.remove('open')
+  })
 
   // Wire hub card clicks
   const hubGrid = document.getElementById('hub-grid')
@@ -276,13 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const store = useDogStore.getState()
       if (store.completed.includes(id)) return
 
-      const sceneIdx = SPOT_TO_SCENE[id]
-      if (sceneIdx !== undefined) {
-        const scene = STORY_SCENES[sceneIdx]
-        const steps = buildStorySteps(scene.icon, scene.title, scene.paragraphs, () => startSpotMap(id), 'play', '地図を開くか？')
-        setSteps(steps)
-        startAdventure()
-      }
+      startSpotMap(id)
     })
   }
 
@@ -295,7 +380,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       setSteps(steps)
       startAdventure()
     } else {
-      showClearedStory(spotId)
+      setCurrentGameSpot(spotId)
+      showTools(false)
+      const starter = (window as any).__gameStarters?.[spotId]
+      if (starter) starter()
     }
   })
 
