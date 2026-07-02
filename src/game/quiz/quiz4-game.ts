@@ -1,4 +1,5 @@
 import { completeCurrentSpot } from '../../hub'
+import { playCorrect, playWrong } from '../../sound'
 
 interface Quiz {
   hint: string
@@ -83,10 +84,12 @@ function onSubmit(): void {
   const val = input.value.trim()
   if (val === currentQuiz.missing) {
     fb.textContent = `✅ 正解！「${currentQuiz.full}」`; fb.style.color = '#4caf50'
+    playCorrect()
     const btn = document.getElementById('quiz4-btn') as HTMLButtonElement | null
     if (btn) { btn.textContent = '✓ クリア！'; btn.onclick = () => { closeQuiz4(); completeCurrentSpot() } }
   } else if (val) {
     fb.textContent = `❌ 正解は「${currentQuiz.missing}」`; fb.style.color = '#ef5350'
+    playWrong()
     input.value = ''; input.focus()
   } else {
     fb.textContent = '漢字1文字を入力'; fb.style.color = '#888'

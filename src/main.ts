@@ -1,7 +1,7 @@
 import './style.css'
 import bgImage from '/gdog.png'
 import { useDogStore } from './store'
-import { STORY_SCENES } from './story/data'
+import { STORY_SCENES, INTRO_LINES } from './story/data'
 import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle/puzzle'
 import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
@@ -9,6 +9,7 @@ import { startAdventure } from './story/adventure'
 import { setupStoryButtons, startStoryScene } from './story/story-mode'
 import { SPOTS, type Spot, type SpotId } from './story/spots'
 import { startMap, setOnArrive, stopMap } from './map'
+import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './sound'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -48,6 +49,8 @@ function showScreen(id: string): void {
 // =====================================================
 // INTRO
 // =====================================================
+let introTypingTimer: number | null = null
+
 function startIntro(): void {
   useDogStore.setState({ appState: 'intro' })
   setPhase('intro')
@@ -63,26 +66,63 @@ function startIntro(): void {
   const textEl = getId('intro-text')
   const skipBtn = getId<HTMLElement>('intro-skip')
   const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
-  textEl.style.display = 'none'
-  skipBtn.style.display = 'none'
+  textEl.style.display = 'block'
+  textEl.textContent = ''
+  skipBtn.style.display = 'block'
   if (bottomBar) bottomBar.style.display = 'none'
 
-  const steps = buildIntroSteps(() => {
+  ensureResumed()
+  let lineIdx = 0
+  let charIdx = 0
+  let lineTimeout = 0
+
+  const skip = () => {
+    if (introTypingTimer !== null) { clearTimeout(introTypingTimer); introTypingTimer = null }
     useDogStore.getState().setIntroDone()
     switchScreen('intro', 'puzzle4')
     start4x4Puzzle()
-  })
-  setSteps(steps)
-  startAdventure()
+  }
+  skipBtn.onclick = skip
+
+  const tick = () => {
+    if (lineIdx >= INTRO_LINES.length) { skip(); return }
+    const line = INTRO_LINES[lineIdx]
+    if (!line.text) {
+      lineTimeout = line.speed
+      lineIdx++
+      introTypingTimer = window.setTimeout(tick, lineTimeout)
+      return
+    }
+    if (charIdx === 0) {
+      const span = document.createElement('span')
+      if (line.color) span.style.color = line.color
+      textEl.appendChild(span)
+      const advance = () => {
+        if (charIdx >= line.text.length) {
+          textEl.appendChild(document.createElement('br'))
+          charIdx = 0
+          lineIdx++
+          introTypingTimer = window.setTimeout(tick, 80)
+          return
+        }
+        span.textContent += line.text[charIdx]
+        charIdx++
+        playTyping()
+        introTypingTimer = window.setTimeout(advance, line.speed)
+      }
+      advance()
+    }
+  }
+  introTypingTimer = window.setTimeout(tick, 400)
 }
 
 function finishIntroState(): void {
   const bgEl = document.getElementById('intro-bg')
   const skipBtn = document.getElementById('intro-skip')
   if (bgEl) { bgEl.style.backgroundImage = `url(${bgImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1' }
-  if (skipBtn) skipBtn.style.display = 'none'
+  if (skipBtn) skipBtn.style.display = 'block'; skipBtn!.onclick = () => {}
   const textEl = document.getElementById('intro-text')
-  if (textEl) textEl.style.display = 'none'
+  if (textEl) textEl.style.display = 'block'
   const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
   if (bottomBar) bottomBar.style.display = 'none'
 
@@ -136,6 +176,7 @@ function start4x4Puzzle(): void {
     status.textContent = `🎉 完成！ ${pState.moves} 回でクリア`
     grid.querySelectorAll('.p4-tile').forEach(el => { el.classList.add('solved-flash'); el.classList.add('in-place') })
     if (navigator.vibrate) navigator.vibrate([50, 30, 50])
+    playCorrect()
     setTimeout(() => {
       solvedHint.style.display = 'block'; goBtn.classList.add('show')
       localStorage.setItem('sd_4x4_done', 'true')
@@ -202,6 +243,7 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
   getId('r-title').textContent = title
   getId('r-text').textContent = subtitle
   getId('r-badge').textContent = `🏅 ${badge}`
+  playCorrect()
   const store = useDogStore.getState()
   const bc = store.completed.length
   getId('r-progress').textContent = `🟡 ${bc}/3`
@@ -224,6 +266,8 @@ function showCompleteScreen(): void {
   showTools(false)
   const el = document.getElementById('complete')
   if (el) el.style.display = 'flex'
+  playComplete()
+  playBark()
   confetti()
 }
 
