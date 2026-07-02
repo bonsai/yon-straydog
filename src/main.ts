@@ -2,13 +2,12 @@ import './style.css'
 import bgImage from '/gdog.png'
 import { useDogStore } from './store'
 import { STORY_SCENES } from './story/data'
-import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
-import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './game/hub'
+import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle/puzzle'
+import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
-import { startAdventure } from './game/adventure'
-import { startMap, stopMap, setOnArrive, setForceMock } from './game/map'
-import { setupStoryButtons, startStoryScene } from './game/story-mode'
-import { SPOTS } from './game/spots'
+import { startAdventure } from './story/adventure'
+import { setupStoryButtons, startStoryScene } from './story/story-mode'
+import { SPOTS } from './story/spots'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -155,37 +154,12 @@ function onPuzzleComplete(): void {
 // =====================================================
 // SPOT FLOW
 // =====================================================
-const SPOT_TO_SCENE: Record<string, number> = { s0: 1, s1: 2, s2: 3, s3: 4 }
-
 function startSpotMap(spotId: string): void {
-  const spot = SPOTS.find(s => s.id === spotId)
-  if (!spot) return
   setPhase('hub')
   showTools(true)
   const spotHub = document.getElementById('spot-hub')
   if (spotHub) spotHub.classList.remove('open')
-  setOnArrive((arrivedSpot) => {
-    if (arrivedSpot.id !== spotId) return
-    stopMap()
-    const sceneIdx = SPOT_TO_SCENE[spotId]
-    if (sceneIdx !== undefined) {
-      const scene = STORY_SCENES[sceneIdx]
-      const steps = buildStorySteps(scene.icon, scene.title, scene.paragraphs, () => {
-        setCurrentGameSpot(spotId)
-        showTools(false)
-        const starter = (window as any).__gameStarters?.[spotId]
-        if (starter) starter()
-      }, 'play', '謎を解くか？')
-      setSteps(steps)
-      startAdventure()
-    } else {
-      setCurrentGameSpot(spotId)
-      showTools(false)
-      const starter = (window as any).__gameStarters?.[spotId]
-      if (starter) starter()
-    }
-  })
-  startMap(useDogStore.getState().completed)
+  startSpotFlow(spotId)
 }
 
 function showClearedStory(spotId: string): void {
@@ -325,16 +299,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTools()
 
   if (location.hash === '#debug') {
-    setForceMock(true)
-    const debugStyle = document.createElement('style')
-    debugStyle.textContent = '.debug-only{display:inline-block!important}'
-    document.head.appendChild(debugStyle)
+    enableDebugMode()
   }
 
   // Wire story mode button
   document.getElementById('hub-story-btn')?.addEventListener('click', () => {
-    showTools(false)
-    startStoryScene(0, () => showTools(true))
+    openStoryModal(0)
   })
 
   // Wire debug panel

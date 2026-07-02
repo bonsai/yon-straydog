@@ -1,4 +1,4 @@
-import { type Step, getCurrentStep, advanceStep, hasMoreSteps, clearSteps } from './game-state'
+import { type Step, getCurrentStep, advanceStep, hasMoreSteps, clearSteps } from '../game/game-state'
 
 let active = false
 let onFinish: (() => void) | null = null

@@ -1,7 +1,43 @@
-import { STORY_SCENES } from '../story/data'
+import { STORY_SCENES } from './data'
+
+const STORY_PROGRESS_KEY = 'sd_story_progress'
 
 let currentIdx = 0
 let onClose: (() => void) | null = null
+
+function readStoredStoryIndex(): number | null {
+  try {
+    const raw = localStorage.getItem(STORY_PROGRESS_KEY)
+    if (raw === null) return null
+    const parsed = Number(raw)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed >= STORY_SCENES.length) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function persistStoryIndex(idx: number): void {
+  currentIdx = idx
+  try {
+    localStorage.setItem(STORY_PROGRESS_KEY, String(idx))
+  } catch {
+    // Ignore storage write failures in non-browser environments.
+  }
+}
+
+export function saveStoryProgressIndex(idx: number): void {
+  persistStoryIndex(idx)
+}
+
+export function clearStoryProgress(): void {
+  currentIdx = 0
+  try {
+    localStorage.removeItem(STORY_PROGRESS_KEY)
+  } catch {
+    // Ignore storage write failures in non-browser environments.
+  }
+}
 
 function renderScene(): void {
   const scene = STORY_SCENES[currentIdx]
@@ -24,10 +60,12 @@ function renderScene(): void {
 
   prevBtn.classList.toggle('hidden-btn', currentIdx === 0)
   nextBtn.textContent = currentIdx >= STORY_SCENES.length - 1 ? '閉じる ✕' : '次へ ▶'
+  persistStoryIndex(currentIdx)
 }
 
-export function startStoryScene(idx: number, onCloseCallback?: () => void): void {
-  currentIdx = idx
+export function startStoryScene(idx?: number, onCloseCallback?: () => void): void {
+  const resolvedIdx = typeof idx === 'number' ? idx : readStoredStoryIndex() ?? 0
+  persistStoryIndex(resolvedIdx)
   onClose = onCloseCallback ?? null
   const el = document.getElementById('story-mode')
   if (el) el.style.display = 'flex'
@@ -35,6 +73,7 @@ export function startStoryScene(idx: number, onCloseCallback?: () => void): void
 }
 
 export function closeStory(): void {
+  persistStoryIndex(currentIdx)
   const el = document.getElementById('story-mode')
   if (el) el.style.display = 'none'
   onClose?.()
@@ -47,12 +86,12 @@ export function setupStoryButtons(): void {
       closeStory()
       return
     }
-    currentIdx++
+    persistStoryIndex(currentIdx + 1)
     renderScene()
   })
   document.getElementById('story-mode-prev')?.addEventListener('click', () => {
     if (currentIdx <= 0) return
-    currentIdx--
+    persistStoryIndex(currentIdx - 1)
     renderScene()
   })
 }

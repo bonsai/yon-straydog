@@ -1,6 +1,6 @@
 import { createSimonState, generateSequence, tapNote, advance } from './simon/logic'
 import { createSimonCanvas, drawSimon, playNote, clickTest } from './simon/view'
-import { completeCurrentSpot } from './hub'
+import { completeCurrentSpot } from '../../hub'
 
 let state = createSimonState()
 let animId: number | null = null

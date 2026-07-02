@@ -1,4 +1,4 @@
-import type { SpotId } from './game/spots'
+import type { SpotId } from './story/spots'
 
 export type AppScreen = 'intro' | 'puzzle4x4' | 'home' | 'map'
 

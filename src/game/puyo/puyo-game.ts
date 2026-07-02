@@ -1,7 +1,7 @@
 import { createPuyoState, movePiece, rotatePiece, hardDrop, tick } from './puyo/logic'
 import { createCanvas, drawFrame } from './puyo/view'
 import { STATION_EMOJIS } from './puyo/types'
-import { completeCurrentSpot } from './hub'
+import { completeCurrentSpot } from '../../hub'
 
 let state = createPuyoState(0)
 let animId: number | null = null

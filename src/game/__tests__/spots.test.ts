@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { SPOTS, BADGE_SPOTS } from '../spots.ts'
-import { getBadgeCount } from '../hub.ts'
+import { SPOTS, BADGE_SPOTS } from '../../story/spots'
+import { getBadgeCount } from '../../hub.js'
 
 describe('spots data integrity', () => {
   it('has exactly 4 spots', () => {

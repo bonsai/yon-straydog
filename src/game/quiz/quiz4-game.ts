@@ -1,4 +1,4 @@
-import { completeCurrentSpot } from './hub'
+import { completeCurrentSpot } from '../../hub'
 
 interface Quiz {
   hint: string
