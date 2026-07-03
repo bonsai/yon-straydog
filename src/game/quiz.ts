@@ -1,5 +1,5 @@
-import { completeCurrentSpot } from '../../hub'
-import { playCorrect, playWrong } from '../../sound'
+import { completeCurrentSpot } from '../map/hub'
+import { playCorrect, playWrong } from './sound'
 
 interface Quiz {
   hint: string
