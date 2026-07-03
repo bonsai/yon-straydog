@@ -1,5 +1,6 @@
 import { useDogStore } from '../store'
 import { SPOTS, BADGE_SPOTS } from '../story/spots'
+import { registerGameStarters as registerReg } from '../game/registry'
 
 const TOOLS_STORAGE_KEY = 'sd_memo'
 
@@ -178,7 +179,6 @@ export function startSpotHub(): void {
 
 export function registerGameStarters(): void {
   const starters: Record<string, () => void> = {}
-  const { registerGameStarters: register } = require('../game/registry')
-  register(starters)
+  registerReg(starters)
   ;(window as any).__gameStarters = starters
 }
