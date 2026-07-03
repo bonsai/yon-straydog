@@ -254,10 +254,23 @@ test.describe('ストーリー', () => {
     await page.locator('#story-mode-next').click()
     await expect(page.locator('#story-mode-text')).not.toBeEmpty()
   })
+
+  test('30. ストーリーマラソンが開始できる', async ({ page }) => {
+    await page.evaluate(() => (window as any).__debug.story.marathon())
+    await expect(page.locator('#story-mode')).toBeVisible()
+    await expect(page.locator('#story-mode-title')).toContainText('幕1')
+    // 最終シーンまで進めて閉じる
+    for (let i = 0; i < 8; i++) {
+      const btn = page.locator('#story-mode-next')
+      const label = await btn.textContent()
+      if (label === '閉じる ✕') break
+      await btn.click()
+    }
+  })
 })
 
 test.describe('エッジケース', () => {
-  test('30. 不明なURLでクラッシュしない', async ({ page }) => {
+  test('31. 不明なURLでクラッシュしない', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
     await page.goto('/nonexistent')

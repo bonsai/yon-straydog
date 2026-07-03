@@ -64,6 +64,23 @@ export function setupDebugAPI(): void {
       list: () => STORY_SCENES.map((s, i) => `${i}: ${s.title}`),
       adventure: () => startAdventure(),
       stop: () => stopAdventure(),
+      marathon: () => {
+        // ストーリーのみモード: 全ゲーム要素をスキップしてストーリーを読む
+        useDogStore.getState().reset()
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'))
+        document.querySelectorAll('#puzzle4, #result, #complete, #spot-hub, #adventure-overlay, #puzzle-wrap, #simon-game, #puyo-game, #quiz4-game, #toolbar, .tool-overlay, #debug-panel').forEach(el => {
+          (el as HTMLElement).style.display = 'none'
+        })
+        startStoryScene(0, () => {
+          // 全シーン読了後: コンプリート画面
+          setTimeout(() => {
+            document.getElementById('story-mode')?.style.display === 'none'
+            showCompleteScreen()
+          }, 300)
+        })
+        console.log('[story] ストーリーマラソン開始 — 全%sシーン', STORY_SCENES.length)
+        console.log('[story] 「次へ ▶」で進行、「閉じる ✕」で終了')
+      },
     },
 
     // ── Tools ──
@@ -172,6 +189,7 @@ export function setupDebugAPI(): void {
       console.log('  list()         — list all story scenes')
       console.log('  adventure()    — start adventure overlay')
       console.log('  stop()         — stop adventure')
+      console.log('  marathon()     — story-only mode: read all scenes')
       console.groupEnd()
       console.group('tool')
       console.log('  show(name)     — show tool overlay (memo/camera/mic)')

@@ -134,7 +134,7 @@ window.__debug = {
   screen: { show(id), hide(id), hub(), home(), intro(), puzzle(), map(), result(spotId?), complete(), all() }
   game:   { start(id), puyo(), simon(), quiz(), clear(), list() }
   map:    { open(), close(), mock(), pos(), moveTo(spotId) }
-  story:  { show(index), list(), adventure(), stop() }
+  story:  { show(index), list(), adventure(), stop(), marathon() }
   tool:   { show(name), hide(name), toolbar(bool), memo(), camera(), mic() }
   state:  { get(), set(partial), complete(id), completeAll(), reset(), introDone(), phase(p) }
   data:   { spots, stories, intro, badgeSpots, sceneIndex }
