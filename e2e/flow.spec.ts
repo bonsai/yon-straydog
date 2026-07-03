@@ -3,12 +3,15 @@ import { test, expect } from '@playwright/test'
 test.describe('画面フロー', () => {
   test('1. 初期表示: Intro画面が表示される', async ({ page }) => {
     await page.goto('/')
+    await page.waitForSelector('#intro-skip', { state: 'visible', timeout: 10000 })
     await expect(page.locator('#intro')).toBeVisible()
     await expect(page.locator('#intro-skip')).toBeVisible()
+    await page.waitForSelector('#intro-text', { state: 'attached', timeout: 5000 })
   })
 
   test('2. スキップ→4x4パズルに遷移', async ({ page }) => {
     await page.goto('/')
+    await page.waitForSelector('#intro-skip', { state: 'visible', timeout: 10000 })
     await page.locator('#intro-skip').click()
     await expect(page.locator('#puzzle4')).toBeVisible()
     await expect(page.locator('#puzzle4-grid')).toBeVisible()

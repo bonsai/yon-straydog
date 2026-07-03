@@ -8,12 +8,12 @@ describe('isSpotUnlocked', () => {
     expect(isSpotUnlocked('s0', ['s2'])).toBe(true)
   })
 
-  it('s1 is always unlocked', () => {
-    expect(isSpotUnlocked('s1', [])).toBe(true)
+  it('s1 requires s0 completed', () => {
+    expect(isSpotUnlocked('s1', [])).toBe(false)
     expect(isSpotUnlocked('s1', ['s0'])).toBe(true)
   })
 
-  it('s2 requires s0 and s1 completed', () => {
+  it('s2 requires s1 completed', () => {
     expect(isSpotUnlocked('s2', [])).toBe(false)
     expect(isSpotUnlocked('s2', ['s0'])).toBe(false)
     expect(isSpotUnlocked('s2', ['s1'])).toBe(false)
@@ -21,11 +21,17 @@ describe('isSpotUnlocked', () => {
     expect(isSpotUnlocked('s2', ['s0', 's1', 's3'])).toBe(true)
   })
 
-  it('s3 requires 3 badges (s0, s1, s2)', () => {
+  it('s3 requires s2 completed', () => {
     expect(isSpotUnlocked('s3', [])).toBe(false)
     expect(isSpotUnlocked('s3', ['s0'])).toBe(false)
     expect(isSpotUnlocked('s3', ['s0', 's1'])).toBe(false)
     expect(isSpotUnlocked('s3', ['s0', 's1', 's2'])).toBe(true)
+  })
+
+  it('s4 requires 4 badges', () => {
+    expect(isSpotUnlocked('s4', [])).toBe(false)
+    expect(isSpotUnlocked('s4', ['s0', 's1', 's2'])).toBe(false)
+    expect(isSpotUnlocked('s4', ['s0', 's1', 's2', 's3'])).toBe(true)
   })
 
   it('returns false for unknown id', () => {
@@ -34,16 +40,24 @@ describe('isSpotUnlocked', () => {
 })
 
 describe('spotLockReason', () => {
-  it('returns hint for s2', () => {
-    expect(spotLockReason('s2', [])).toContain('さぼうる')
-    expect(spotLockReason('s2', ['s0'])).toContain('さぼうる')
+  it('returns hint for s1', () => {
+    expect(spotLockReason('s1', [])).toContain('YON 2F')
   })
 
-  it('returns badge count for s3', () => {
-    expect(spotLockReason('s3', [])).toContain('0/3')
-    expect(spotLockReason('s3', ['s0'])).toContain('1/3')
-    expect(spotLockReason('s3', ['s0', 's1'])).toContain('2/3')
-    expect(spotLockReason('s3', ['s0', 's1', 's2'])).toContain('3/3')
+  it('returns hint for s2', () => {
+    expect(spotLockReason('s2', [])).toContain('響')
+    expect(spotLockReason('s2', ['s0'])).toContain('響')
+  })
+
+  it('returns hint for s3', () => {
+    expect(spotLockReason('s3', [])).toContain('神田橋公園')
+  })
+
+  it('returns badge count for s4', () => {
+    expect(spotLockReason('s4', [])).toContain('0/4')
+    expect(spotLockReason('s4', ['s0'])).toContain('1/4')
+    expect(spotLockReason('s4', ['s0', 's1'])).toContain('2/4')
+    expect(spotLockReason('s4', ['s0', 's1', 's2', 's3'])).toContain('4/4')
   })
 
   it('returns lock emoji for other ids', () => {
@@ -62,9 +76,9 @@ describe('getBadgeCount', () => {
     expect(getBadgeCount(['s0', 's1', 's2'])).toBe(3)
   })
 
-  it('does not count s3', () => {
-    expect(getBadgeCount(['s3'])).toBe(0)
-    expect(getBadgeCount(['s0', 's3'])).toBe(1)
+  it('counts s4 as not a badge spot', () => {
+    expect(getBadgeCount(['s4'])).toBe(0)
+    expect(getBadgeCount(['s0', 's1', 's2', 's3', 's4'])).toBe(4)
   })
 })
 

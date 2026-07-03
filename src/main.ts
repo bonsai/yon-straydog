@@ -1,8 +1,8 @@
 import './style.css'
-import bgImage from '/gdog.png'
+import coupleImage from '/0.jpg'
+import dogImage from '/gdog.png'
 import { useDogStore } from './store'
 import { STORY_SCENES, INTRO_LINES } from './story/spots'
-import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
 import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './map/hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game-state'
 import { startAdventure, setupStoryButtons, startStoryScene } from './story/adventure'
@@ -10,6 +10,8 @@ import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from '
 import { startMap, setOnArrive, stopMap } from './map/map'
 import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './game/sound'
 import { setupDebugAPI } from './debug-api'
+import { autoSave } from './save'
+import { PuzzleStarter } from './game/puzzle-starter'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -51,6 +53,29 @@ export function showScreen(id: string): void {
 // =====================================================
 let introTypingTimer: number | null = null
 
+function startPuzzle4(): void {
+  const intro = document.getElementById('intro')
+  if (intro) intro.classList.remove('active')
+  PuzzleStarter()
+  // After puzzle solved, go to hub
+  const goBtn = document.getElementById('p4-go') as HTMLButtonElement
+  if (goBtn) {
+    goBtn.addEventListener('click', () => {
+      const p4 = document.getElementById('puzzle4')
+      if (p4) p4.style.display = 'none'
+      goToHub()
+    }, { once: true })
+  }
+  const closeBtn = document.getElementById('puzzle4-close')
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      const p4 = document.getElementById('puzzle4')
+      if (p4) p4.style.display = 'none'
+      goToHub()
+    }, { once: true })
+  }
+}
+
 function startIntro(): void {
   useDogStore.setState({ appState: 'intro' })
   setPhase('intro')
@@ -59,7 +84,7 @@ function startIntro(): void {
   if (useDogStore.getState().introDone) { finishIntroState(); return }
 
   const bgEl = getId('intro-bg')
-  bgEl.style.background = `url(${bgImage}) center/contain no-repeat #0a0a0f`
+  bgEl.style.background = `url(${coupleImage}) center/contain no-repeat #0a0a0f`
   bgEl.classList.add('faded', 'visible')
   bgEl.style.opacity = '1'
 
@@ -79,8 +104,7 @@ function startIntro(): void {
   const skip = () => {
     if (introTypingTimer !== null) { clearTimeout(introTypingTimer); introTypingTimer = null }
     useDogStore.getState().setIntroDone()
-    switchScreen('intro', 'puzzle4')
-    start4x4Puzzle()
+    startPuzzle4()
   }
   skipBtn.onclick = skip
 
@@ -94,6 +118,11 @@ function startIntro(): void {
       return
     }
     if (charIdx === 0) {
+      // switch to dog image when couple hands over the photo
+      if (lineIdx === 10) {
+        const bgEl2 = document.getElementById('intro-bg')
+        if (bgEl2) { bgEl2.style.backgroundImage = `url(${dogImage})`; bgEl2.style.opacity = '1' }
+      }
       const span = document.createElement('span')
       if (line.color) span.style.color = line.color
       textEl.appendChild(span)
@@ -119,78 +148,14 @@ function startIntro(): void {
 function finishIntroState(): void {
   const bgEl = document.getElementById('intro-bg')
   const skipBtn = document.getElementById('intro-skip')
-  if (bgEl) { bgEl.style.backgroundImage = `url(${bgImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1' }
+  if (bgEl) { bgEl.style.backgroundImage = `url(${coupleImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1' }
   if (skipBtn) skipBtn.style.display = 'block'; skipBtn!.onclick = () => {}
   const textEl = document.getElementById('intro-text')
   if (textEl) textEl.style.display = 'block'
   const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
   if (bottomBar) bottomBar.style.display = 'none'
 
-  if (localStorage.getItem('sd_4x4_done') === 'true') {
-    setTimeout(() => goToHub(), 100)
-  } else {
-    setTimeout(() => { switchScreen('intro', 'puzzle4'); start4x4Puzzle() }, 100)
-  }
-}
-
-// =====================================================
-// 4x4 PUZZLE
-// =====================================================
-function start4x4Puzzle(): void {
-  useDogStore.setState({ appState: 'puzzle4x4' })
-  setPhase('puzzle')
-  showTools(false)
-  const grid = getId('puzzle4-grid')
-  const status = getId('puzzle4-status')
-  const solvedHint = getId('p4-solved-hint')
-  const goBtn = getId<HTMLButtonElement>('p4-go')
-  solvedHint.style.display = 'none'; goBtn.classList.remove('show')
-
-  const SIZE = 4
-  const alreadySolved = localStorage.getItem('sd_4x4_done') === 'true'
-  let pState: PuzzleState = createPuzzleState(!alreadySolved)
-
-  function renderGrid(): void {
-    grid.innerHTML = ''
-    for (let i = 0; i < pState.tiles.length; i++) {
-      const t = pState.tiles[i]
-      const row = Math.floor(t.currentPos / SIZE)
-      const col = t.currentPos % SIZE
-      const div = document.createElement('div')
-      div.className = 'p4-tile'
-      if (pState.selectedIdx !== null && pState.selectedIdx === i) div.classList.add('selected')
-      if (t.currentPos === t.correctPos) div.classList.add('in-place')
-      div.style.backgroundPosition = `${(col/3)*100}% ${(row/3)*100}%`
-      div.dataset.idx = String(i); div.addEventListener('click', () => onTap(i)); grid.appendChild(div)
-    }
-    status.textContent = `操作: ${pState.moves} 回`
-  }
-
-  function onTap(idx: number): void {
-    if (goBtn.classList.contains('show')) return
-    pState = selectOrSwap(pState, idx); renderGrid()
-    if (pState.selectedIdx === null && isSolved(pState)) onSolved()
-  }
-
-  function onSolved(): void {
-    status.textContent = `🎉 完成！ ${pState.moves} 回でクリア`
-    grid.querySelectorAll('.p4-tile').forEach(el => { el.classList.add('solved-flash'); el.classList.add('in-place') })
-    if (navigator.vibrate) navigator.vibrate([50, 30, 50])
-    playCorrect()
-    setTimeout(() => {
-      solvedHint.style.display = 'block'; goBtn.classList.add('show')
-      localStorage.setItem('sd_4x4_done', 'true')
-    }, 500)
-  }
-
-  const closeBtn = document.getElementById('puzzle4-close')
-  closeBtn?.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() }, { once: true })
-  goBtn.addEventListener('click', () => { hideEl('puzzle4'); onPuzzleComplete() }, { once: true })
-  renderGrid()
-}
-
-function onPuzzleComplete(): void {
-  goToHub()
+  setTimeout(() => goToHub(), 100)
 }
 
 // =====================================================
@@ -218,17 +183,19 @@ export function showClearedStory(spotId: string): void {
   const spot = SPOTS.find(s => s.id === spotId)
   if (!spot) { goToHub(); return }
   const badgeCount = useDogStore.getState().completed.length
+  const totalBadges = SPOTS.filter(s => s.game !== 'final').length
   const paras = spot.storyParagraphs.filter(p => p)
   const steps = buildStorySteps(spot.icon, spot.name, paras, () => {
     showResultScreen(
-      spot.badge,
-      'バッジを獲得！',
-      spot.badgeName,
-      `${badgeCount}/3 のヒント玉を収集`
+      spot.badge || spot.icon,
+      spot.badge ? 'バッジを獲得！' : spot.name,
+      spot.badgeName || '',
+      `${badgeCount}/${totalBadges} のヒント玉を収集`
     )
   }, 'hub', 'つづける')
   setSteps(steps)
   startAdventure()
+  autoSave(0)
 }
 
 export function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
@@ -242,7 +209,7 @@ export function showResultScreen(icon: string, title: string, badge: string, sub
   playCorrect()
   const store = useDogStore.getState()
   const bc = store.completed.length
-  getId('r-progress').textContent = `🟡 ${bc}/3`
+  getId('r-progress').textContent = `🟡 ${bc}/${SPOTS.filter(s => s.game !== 'final').length}`
   r.style.display = 'flex'
   const btn = getId<HTMLButtonElement>('r-btn')
   btn.onclick = () => {
@@ -265,6 +232,7 @@ export function showCompleteScreen(): void {
   playComplete()
   playBark()
   confetti()
+  autoSave(0)
 }
 
 export function confetti(): void {
@@ -311,7 +279,7 @@ export function renderDebugPanel(): void {
       const done = completed.includes(s.id)
       const unlocked = s.id === 's0' || s.id === 's1' || completed.includes('s0') && completed.includes('s1') || done
       const lockStatus = done ? 'done' : unlocked ? 'unlocked' : 'locked'
-      const gameLabel = { puyo: 'ぷよぷよ', simon: 'シモン', quiz4: 'クイズ', final: '最終' }[s.game]
+      const gameLabel = { puzzle: '4×4パズル', puyo: 'ぷよぷよ', simon: 'シモン', quiz4: 'クイズ', final: '最終' }[s.game]
       return `<div class="debug-card">
         <h3>${s.icon} ${s.name} <span class="tag ${lockStatus}">${lockStatus}</span></h3>
         <div class="row"><span class="label">ID:</span> ${s.id}</div>
@@ -351,6 +319,11 @@ export function renderDebugPanel(): void {
 }
 
 // =====================================================
+// EXPORTS FOR TESTING
+// =====================================================
+export { startIntro, finishIntroState, startSpotMap }
+
+// =====================================================
 // INIT
 // =====================================================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -386,7 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const id = card.dataset.id
       if (!id) return
 
-      if (id === 's3' && getBadgeCount(useDogStore.getState().completed) >= 3) {
+      if (id === 's4' && getBadgeCount(useDogStore.getState().completed) >= 4) {
         useDogStore.getState().completeSpot('s3')
         const spot = SPOTS.find(s => s.id === 's3')!
         const allParas = [...spot.storyParagraphs.filter(p => p), '', ...SCENE_REUNION.paragraphs.filter(p => p)]
@@ -417,10 +390,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   })
 
   const { introDone } = useDogStore.getState()
-  if (introDone && localStorage.getItem('sd_4x4_done') === 'true') {
+  if (introDone) {
     goToHub()
-  } else if (introDone) {
-    finishIntroState()
   } else {
     startIntro()
   }

@@ -1,5 +1,5 @@
 export type SpotId = string
-export type MiniGameType = 'puyo' | 'simon' | 'quiz4' | 'final'
+export type MiniGameType = 'puzzle' | 'puyo' | 'simon' | 'quiz4' | 'final'
 
 // ============================================================================
 // Intro Text
@@ -21,11 +21,10 @@ export const INTRO_LINES: IntroLine[] = [
   { text: '', speed: 200 },
   { text: 'あなたは夫妻の代わりに、', speed: 40 },
   { text: '犬を探すことにした——', speed: 40 },
-  { text: '', speed: 600 },
+  { text: '', speed: 400 },
   { text: '夫妻は一枚の写真を差し出した。', speed: 40 },
   { text: 'だが——写真は砕け散っている。', speed: 40 },
-  { text: '', speed: 300 },
-  { text: '元に戻せば、なにかがわかる。', speed: 35 },
+  { text: '元に戻せば、なにかがわかる。', speed: 40 },
 ]
 
 // ============================================================================
@@ -45,6 +44,15 @@ export const SCENE_INTRO: StoryScene = {
     '「あの…すみません。」', '「うちの犬がいなくなってしまったんです。」', '「妻が妊娠中で、動けなくて…どうか…」', '',
     'あなたは夫妻の代わりに、', '犬を探すことにした——', '夫妻は一枚の写真を差し出した。', 'だが——写真は砕け散っている。', '',
     '元に戻せば、なにかがわかる。',
+  ],
+}
+
+export const SCENE_YON2F: StoryScene = {
+  icon: '📖', title: '幕2-0: YON 2F — 砕けた写真',
+  paragraphs: [
+    '夫妻は一枚の写真を差し出した。', 'だが——写真は砕け散っている。', '',
+    '元に戻せば、なにかがわかる。', '',
+    '「さぼうる の レインボウを さがせ」',
   ],
 }
 
@@ -110,6 +118,7 @@ export const SCENE_EXTRAS: StoryScene = {
 
 export const STORY_SCENES: StoryScene[] = [
   SCENE_INTRO,
+  SCENE_YON2F,
   SCENE_SABOURU,
   SCENE_HIBIKI,
   SCENE_KANDABASHI,
@@ -139,7 +148,16 @@ export interface Spot {
 
 export const SPOTS: Spot[] = [
   {
-    id: 's0', name: 'さぼうる', icon: '🍨',
+    id: 's0', name: 'YON 2F', icon: '📖',
+    hint: '壁のQRコードを読み取ると、夫妻が待っている。砕けた写真を元に戻せ。',
+    game: 'puzzle',
+    story: '夫妻の写真は砕け散っていた。元に戻すと「さぼうるのレインボウをさがせ」の文字。',
+    storyParagraphs: SCENE_YON2F.paragraphs,
+    badge: '📖', badgeName: '出会いのバッジ',
+    lat: 35.69598, lng: 139.75765,
+  },
+  {
+    id: 's1', name: 'さぼうる', icon: '🍨',
     hint: '昭和のクリームソーダが名物の喫茶店。ピンクの外壁と白い看板が目印。',
     game: 'puyo',
     story: '犬は窓辺でいつもこのグラスを見つめていた。あの頃、まだ夫は一人だった。',
@@ -148,7 +166,7 @@ export const SPOTS: Spot[] = [
     lat: 35.69580, lng: 139.75800,
   },
   {
-    id: 's1', name: '響（野外彫刻）', icon: '🔔',
+    id: 's2', name: '響（野外彫刻）', icon: '🔔',
     hint: '細い路地を抜けた先にある、曲線の金属彫刻。風が通り抜ける音が聞こえる場所。',
     game: 'simon',
     story: '犬は曲線に耳を寄せていた。金属の奥で、夫のリードを握る手が震えていたのを覚えている。',
@@ -157,7 +175,7 @@ export const SPOTS: Spot[] = [
     lat: 35.69412, lng: 139.75954,
   },
   {
-    id: 's2', name: '神田橋公園', icon: '🗽',
+    id: 's3', name: '神田橋公園', icon: '🗽',
     hint: '金ピカの像が立っている小さな公園。鳥が頭にとまっても動かない。',
     game: 'quiz4',
     story: '金の像の前で、妻が言った。「私たち、親になるんだね」',
@@ -166,17 +184,17 @@ export const SPOTS: Spot[] = [
     lat: 35.69480, lng: 139.76500,
   },
   {
-    id: 's3', name: 'YON 3F リビングミュージック', icon: '🎵',
-    hint: '* 3つのヒント玉を集めると場所が開く *',
+    id: 's4', name: 'YON 3F リビングミュージック', icon: '🎵',
+    hint: '* 4つのヒント玉を集めると場所が開く *',
     game: 'final',
     story: '犬はずっとここで、真空管アンプの音に耳をすませていた。',
     storyParagraphs: SCENE_YON3F_STORY.paragraphs,
-    badge: '🎵', badgeName: '音のバッジ',
+    badge: '', badgeName: '',
     lat: 35.69598, lng: 139.75765,
   },
 ]
 
-export const BADGE_SPOTS = SPOTS.filter(s => s.id !== 's3')
+export const BADGE_SPOTS = SPOTS.filter(s => s.id !== 's4')
 
 // Maps spot id → STORY_SCENES index for story viewer
-export const SPOT_SCENE_INDEX: Record<SpotId, number> = { s0: 1, s1: 2, s2: 3, s3: 4 }
+export const SPOT_SCENE_INDEX: Record<SpotId, number> = { s0: 1, s1: 2, s2: 3, s3: 4, s4: 5 }

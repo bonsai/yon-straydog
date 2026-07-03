@@ -125,17 +125,21 @@ export function completeCurrentSpot(): void {
 }
 
 export function isSpotUnlocked(id: string, completed: string[]): boolean {
-  if (id === 's0' || id === 's1') return true
-  if (id === 's2') return completed.includes('s0') && completed.includes('s1')
-  if (id === 's3') return getBadgeCount(completed) >= 3
+  if (id === 's0') return true
+  if (id === 's1') return completed.includes('s0')
+  if (id === 's2') return completed.includes('s1')
+  if (id === 's3') return completed.includes('s2')
+  if (id === 's4') return getBadgeCount(completed) >= 4
   return false
 }
 
 export function spotLockReason(id: string, completed: string[]): string {
-  if (id === 's2') return 'まず さぼうる と 響 を巡ろう'
-  if (id === 's3') {
+  if (id === 's1') return 'まず YON 2F の写真を直そう'
+  if (id === 's2') return 'まず 響 の音を聴こう'
+  if (id === 's3') return 'まず 神田橋公園 を巡ろう'
+  if (id === 's4') {
     const n = getBadgeCount(completed)
-    return `ヒント玉 ${n}/3`
+    return `ヒント玉 ${n}/4`
   }
   return '🔒'
 }

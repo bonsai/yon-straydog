@@ -13,6 +13,7 @@ import {
   createTable, dropTable, insert, select, selectById,
   update, remove, count, allTables, exportDb, importDb, clearDb, seedFromUrl,
 } from './db'
+import { saveGame, loadGame, listSaves, deleteSave, restoreSave, exportSave, importSave } from './save'
 
 export function setupDebugAPI(): void {
   if (!import.meta.env.DEV && !location.hash.startsWith('#debug')) return
@@ -238,6 +239,68 @@ export function setupDebugAPI(): void {
       },
     },
 
+    // ── Save/Load ──
+    save: {
+      save(slot?: number, name?: string) {
+        const data = saveGame(slot ?? 0, name)
+        if (data) {
+          console.log('[save] saved to slot %d: %s', data.slot, data.name)
+          console.table({
+            intro: data.introDone, puzzle: data.puzzleDone,
+            s0: data.s0, s1: data.s1, s2: data.s2, s3: data.s3,
+            story: data.storyProgress, memo: data.memo ? data.memo.slice(0, 20) + '...' : '',
+          })
+        }
+        return data
+      },
+      load(slot?: number) {
+        const data = loadGame(slot ?? 0)
+        if (!data) { console.warn('[save] no save in slot %d', slot ?? 0); return null }
+        console.log('[save] loaded slot %d: %s', data.slot, data.name)
+        console.table({
+          intro: data.introDone, puzzle: data.puzzleDone,
+          s0: data.s0, s1: data.s1, s2: data.s2, s3: data.s3,
+        })
+        restoreSave(data)
+        goToHub()
+        return data
+      },
+      list() {
+        const saves = listSaves()
+        if (saves.length === 0) {
+          console.log('[save] セーブデータなし')
+        } else {
+          console.table(saves.map(s => ({
+            slot: s.slot, name: s.name,
+            intro: s.introDone ? '✅' : '❌',
+            s0: s.s0 ? '🍨' : '', s1: s.s1 ? '🔔' : '', s2: s.s2 ? '🗽' : '', s3: s.s3 ? '🎵' : '',
+            time: new Date(s.timestamp).toLocaleString(),
+          })))
+        }
+        return saves
+      },
+      delete(slot: number) {
+        const ok = deleteSave(slot)
+        console.log(ok ? '[save] deleted slot %d' : '[save] failed to delete slot %d', slot)
+        return ok
+      },
+      export(slot?: number) {
+        const json = exportSave(slot)
+        if (!json) { console.warn('[save] nothing to export'); return null }
+        console.log('[save] exported:\n%s', json)
+        navigator.clipboard?.writeText(json).catch(() => {})
+        return json
+      },
+      import(json: string) {
+        const ok = importSave(json)
+        if (ok) {
+          console.log('[save] imported successfully')
+          console.table(listSaves())
+        }
+        return ok
+      },
+    },
+
     // ── Database ──
     db: {
       createTable: (name: string) => createTable(name),
@@ -350,6 +413,14 @@ export function setupDebugAPI(): void {
       console.log('  encode()       — show current spell code (4 hiragana)')
       console.log('  decode(code)   — restore state from spell code')
       console.log('  list()         — show checkpoint spell codes')
+      console.groupEnd()
+      console.group('save')
+      console.log('  save(s?,name?) — save game to slot (default 0)')
+      console.log('  load(s?)       — load game from slot')
+      console.log('  list()         — list all saves')
+      console.log('  delete(s)      — delete save from slot')
+      console.log('  export(s?)     — export saves as JSON (copies to clipboard)')
+      console.log('  import(json)   — import saves from JSON')
       console.groupEnd()
       console.group('db')
       console.log('  createTable(n) — create table')

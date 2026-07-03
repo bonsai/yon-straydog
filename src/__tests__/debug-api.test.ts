@@ -90,14 +90,14 @@ describe('debug API', () => {
   it('__debug.story.list() returns all story titles', () => {
     setupDebugAPI()
     const list = (window as any).__debug.story.list()
-    expect(list.length).toBe(8)
+    expect(list.length).toBe(9)
     expect(list[0]).toContain('出会い')
   })
 
   it('__debug.data.spots references spot definitions', () => {
     setupDebugAPI()
     const spots = (window as any).__debug.data.spots
-    expect(spots.length).toBe(4)
+    expect(spots.length).toBe(5)
     expect(spots[0].id).toBe('s0')
   })
 

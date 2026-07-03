@@ -13,7 +13,7 @@ describe('startSpotHub', () => {
           <span id="hub-title">Stray Dog</span>
           <button id="hub-story-btn" class="hub-story-btn">📖</button>
           <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
-          <div id="hub-balls">⚪⚪⚪</div>
+          <div id="hub-balls">⚪⚪⚪⚪</div>
         </div>
         <div id="hub-grid"></div>
       </div>
@@ -27,19 +27,20 @@ describe('startSpotHub', () => {
     expect(el?.classList.contains('open')).toBe(true)
   })
 
-  it('startSpotHub renders 4 spot cards in the grid', () => {
+  it('startSpotHub renders 5 spot cards in the grid', () => {
     startSpotHub()
     const grid = document.getElementById('hub-grid')
-    expect(grid?.children.length).toBe(4)
+    expect(grid?.children.length).toBe(5)
   })
 
-  it('startSpotHub shows s0 and s1 as unlocked, s2 as locked', () => {
+  it('startSpotHub shows s0 as unlocked, s1-s4 as locked', () => {
     startSpotHub()
     const cards = document.querySelectorAll('.hub-card')
-    expect(cards[0].classList.contains('locked')).toBe(false) // s0
-    expect(cards[1].classList.contains('locked')).toBe(false) // s1
-    expect(cards[2].classList.contains('locked')).toBe(true)  // s2 locked
-    expect(cards[3].classList.contains('locked')).toBe(true)  // s3 locked
+    expect(cards[0].classList.contains('locked')).toBe(false) // s0 unlocked
+    expect(cards[1].classList.contains('locked')).toBe(true)  // s1 locked (needs s0)
+    expect(cards[2].classList.contains('locked')).toBe(true)  // s2 locked (needs s1)
+    expect(cards[3].classList.contains('locked')).toBe(true)  // s3 locked (needs s2)
+    expect(cards[4].classList.contains('locked')).toBe(true)  // s4 locked (needs 4 badges)
   })
 
   it('startSpotHub unlocks s2 after s0+s1 completed', () => {
@@ -58,11 +59,11 @@ describe('startSpotHub', () => {
     expect(cards[1].classList.contains('done')).toBe(false)
   })
 
-  it('renders badge balls (3 balls)', () => {
+  it('renders badge balls (4 balls)', () => {
     startSpotHub()
     const balls = document.getElementById('hub-balls')
     const ballSpans = balls?.querySelectorAll('span')
-    expect(ballSpans?.length).toBe(3)
+    expect(ballSpans?.length).toBe(4)
   })
 
   it('updates badge display when spots are completed', () => {

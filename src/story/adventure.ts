@@ -153,7 +153,7 @@ export function startStoryScene(idx?: number, onCloseCallback?: () => void): voi
   renderScene()
 }
 
-function closeStory(): void {
+export function closeStory(): void {
   persistStoryIndex(currentIdx)
   const el = document.getElementById('story-mode')
   if (el) el.style.display = 'none'

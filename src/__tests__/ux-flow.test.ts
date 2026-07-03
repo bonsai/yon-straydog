@@ -171,10 +171,10 @@ describe('UX flow: screen transitions', () => {
     expect(cards?.length).toBe(4)
   })
 
-  it('hub shows 3 badge balls', () => {
+  it('hub shows 4 badge balls', () => {
     goToHub()
     const balls = document.getElementById('hub-balls')
-    expect(balls?.querySelectorAll('span').length).toBe(3)
+    expect(balls?.querySelectorAll('span').length).toBe(4)
   })
 
   it('hub progress updates after completing s0', () => {

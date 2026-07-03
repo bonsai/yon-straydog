@@ -3,8 +3,8 @@ import { SPOTS, BADGE_SPOTS } from '../../story/spots'
 import { getBadgeCount } from '../../map/hub'
 
 describe('spots data integrity', () => {
-  it('has exactly 4 spots', () => {
-    expect(SPOTS.length).toBe(4)
+  it('has exactly 5 spots', () => {
+    expect(SPOTS.length).toBe(5)
   })
 
   it('each spot has a unique id', () => {
@@ -22,17 +22,17 @@ describe('spots data integrity', () => {
   })
 
   it('each spot has a valid game type', () => {
-    const validGames = ['puyo', 'simon', 'quiz4', 'final']
+    const validGames = ['puzzle', 'puyo', 'simon', 'quiz4', 'final']
     for (const spot of SPOTS) {
       expect(validGames).toContain(spot.game)
     }
   })
 
-  it('s3 (final spot) requires all 3 hints', () => {
-    const s3 = SPOTS.find(s => s.id === 's3')
-    expect(s3).toBeDefined()
-    expect(s3!.game).toBe('final')
-    expect(s3!.hint).toContain('3')
+  it('s4 (final spot) requires all 4 hints', () => {
+    const s4 = SPOTS.find(s => s.id === 's4')
+    expect(s4).toBeDefined()
+    expect(s4!.game).toBe('final')
+    expect(s4!.hint).toContain('4')
   })
 
   it('has story for every spot', () => {
@@ -41,8 +41,8 @@ describe('spots data integrity', () => {
     }
   })
 
-  it('has badge emoji for every spot', () => {
-    for (const spot of SPOTS) {
+  it('has badge emoji for every badge spot (s0-s3)', () => {
+    for (const spot of SPOTS.filter(s => s.game !== 'final')) {
       expect(spot.badge.length).toBeGreaterThan(0)
       expect(spot.badgeName.length).toBeGreaterThan(0)
     }
@@ -50,9 +50,8 @@ describe('spots data integrity', () => {
 })
 
 describe('BADGE_SPOTS', () => {
-  it('has 3 badge spots (excludes s3)', () => {
-    expect(BADGE_SPOTS.length).toBe(3)
-    expect(BADGE_SPOTS.every(s => s.id !== 's3')).toBe(true)
+  it('has 4 badge spots (excludes s4)', () => {
+    expect(BADGE_SPOTS.length).toBe(4)
   })
 
   it('each badge spot has unique badge emoji', () => {
@@ -78,8 +77,8 @@ describe('getBadgeCount', () => {
     expect(getBadgeCount(['s0', 's1', 's2'])).toBe(3)
   })
 
-  it('does not count s3', () => {
-    expect(getBadgeCount(['s3'])).toBe(0)
-    expect(getBadgeCount(['s0', 's3'])).toBe(1)
+  it('now counts s3 as badge spot', () => {
+    expect(getBadgeCount(['s3'])).toBe(1)
+    expect(getBadgeCount(['s0', 's3'])).toBe(2)
   })
 })

@@ -3,3 +3,4 @@ dist/
 elm.js
 .DS_Store
 test-results/
+.vercel

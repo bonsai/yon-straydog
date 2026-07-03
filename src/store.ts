@@ -62,3 +62,6 @@ export const useDogStore = {
   getState: () => ({ ...state, ...actions }),
   setState: (partial: Partial<DogState>) => Object.assign(state, partial),
 }
+
+// Expose for save system
+;(window as any).__dogStore_get = () => ({ ...state, ...actions })

@@ -1,61 +1,45 @@
 # テストカバレッジ未達箇所の洗い出し
 
-## 概要
-全テスト 182件 Passed (22ファイル)。新規に追加したテスト箇所と、まだカバーできていない箇所を記録する。
+> **Status: ✅ Done (2026-07-03)** — 273 tests / 29 files
 
-## 追加済みテスト (今回の実装分)
+## 完了
 
-### 完了
-- [x] `game/puyo.ts` — `startPuyoGame()`, `closePuyoGame()`（DOM表示/非表示, canvas追加, イベントリスナー解除）
-- [x] `game/simon.ts` — `startSimon()`, `closeSimon()`（DOM表示/非表示, canvas追加, イベントリスナー解除）
-- [x] `game/quiz.ts` — `startQuiz4()`, `closeQuiz4()`（DOM表示, フィールド設定, onSubmit正解/不正解, Enter/Escapeキー）
-- [x] `story/adventure.ts` — `startAdventure()`, `stopAdventure()`, ステップ実行（text→choice→action の連続実行）, オーバーレイクリック, yesボタン
-- [x] `map/hub.ts` — `showTools()`, `setupTools()`（メモ/カメラ/マイク/マップツールの開閉）, `startSpotHub()`（カードレンダリング, ロック状態, バッジ表示, 完了マーク）
-- [x] `status.ts` — `useGameStore` 初期状態, 各アクションスタブ, `buildIntroSteps()`, `buildHintSteps()`, `buildStorySteps()`
-- [x] バグ修正: `simon.ts` の `closeSimon()` に `removeEventListener('keydown')` が欠けていたため追加
+### P1: main.ts lifecycle (2026-07-03)
+- [x] `startIntro()` — phase/hide toolbar/bg set/skip/if introDone branch
+- [x] `finishIntroState()` — sd_4x4_done=true→hub / false→puzzle
+- [x] `start4x4Puzzle()` — 16 tiles render, tap→select→swap, solved hint, close→hub
+- [x] `onPuzzleComplete()` → goToHub
+- [x] `goToHub()` — hub open, 4 cards, lock state, badge balls
+- [x] `showResultScreen()`, `showCompleteScreen()`
+- [x] `switchScreen()`, `showScreen()`, `hideEl()`
+- [x] `enableDebugMode()`, `renderDebugPanel()`, `shareResult()`, `confetti()`
 
-## 未達 (P1-P6)
+**Test file**: `src/__tests__/main-lifecycle.test.ts` (19 tests)
 
-### P1: ゲームフローの要 (要 jsdom + DOM モック)
-- [ ] `main.ts` — `startIntro()`, `start4x4Puzzle()`, `goToHub()`, `startSpotMap()`, `showClearedStory()`, `showResultScreen()`, `showCompleteScreen()`
-- [ ] `main.ts` — `switchScreen()`, `showScreen()`（画面遷移アニメーション制御）
-- [ ] `main.ts` — `finishIntroState()`, `onPuzzleComplete()`（状態に応じた分岐）
-- [ ] `main.ts` — `enableDebugMode()`, `renderDebugPanel()`, `shareResult()`, `confetti()`
+### P4: Memo persistence (2026-07-03)
+- [x] save/restore memo via localStorage on close/reopen
+- [x] empty memo save
+- [x] overlay close on close button
+
+**Test file**: `src/map/__tests__/memo.test.ts` (4 tests)
+
+### P5: Story buttons (2026-07-03)
+- [x] next button advances scenes
+- [x] prev button hidden on scene 0, visible after advance
+- [x] prev goes back to previous scene
+- [x] last scene → close button text + close on click
+- [x] closeStory persists index, calls onClose callback
+
+**Test file**: `src/story/__tests__/story-buttons.test.ts` (8 tests)
+
+## 未達 (残り)
 
 ### P2: ミニゲーム UI (Canvas/Web Audio依存)
-- [ ] `game/puyo.ts` — `drawFrame()`, `createCanvas()`, `createCanvasSize()`（Canvas描画ロジック）
-- [ ] `game/simon.ts` — `drawSimon()` の全フェーズ（showing, input, correct, wrong, clear）
-- [ ] `game/simon.ts` — `playNote()`（Web Audio）
+- [ ] `game/puyo.ts` — `drawFrame()`, `createCanvas()` (Canvas描画)
+- [ ] `game/simon.ts` — `drawSimon()` 全フェーズ, `playNote()` (Web Audio)
 
-### P3: マップ/GPS (Leaflet依存でモック必須)
-- [ ] `map/map.ts` — `startMap()`, `stopMap()`, `startGPS()`, `startMockGPS()`
-- [ ] `map/map.ts` — `checkArrival()`, `showBottomSheet()`, `updateUserPos()`
-- [ ] `map/map.ts` — `startDogWander()`, `mockStep()`, `onPosition()`
+### P3: マップ/GPS (Leaflet依存)
+- [ ] `map/map.ts` — `startMap()`, `startGPS()`, `startMockGPS()`, `checkArrival()`
 
-### P4: ツールバーUI残り
-- [ ] `map/hub.ts` — `showMemo()`（テキストエリア内容の永続化検証）
-- [ ] `map/hub.ts` — `stopCamera()`, `stopMic()`（ストリーム解放）
-
-### P5: アドベンチャー残り
-- [ ] `story/adventure.ts` — `setupStoryButtons()`（prev/nextボタンの動作）, `renderScene()`（全パラグラフタイプ）
-- [ ] `story/adventure.ts` — `closeStory()`, `readStoredStoryIndex()`（異常値ハンドリング）
-
-### P6: スタブ・補助モジュール
-- [ ] `status.ts` — `useGameStore.setState()`（状態更新の実装未完了）
-
-## 関連ファイル
-- `src/main.ts`
-- `src/game/puyo.ts`
-- `src/game/simon.ts`
-- `src/game/quiz.ts`
-- `src/map/map.ts`
-- `src/map/hub.ts`
-- `src/story/adventure.ts`
-- `src/status.ts`
-- `src/hub.ts`
-
-## 備考
-- Canvas (`getContext('2d')`) のテストには `canvas` npm パッケージが必要
-- Leaflet (`L.map`) のテストには leaflet のモックが必要
-- Web Audio (`AudioContext`) は既存 setup.ts でモック済み
-- メディアAPI (`getUserMedia`) は setup.ts でモック済み
+### P6: スタブ
+- [ ] `status.ts` — `useGameStore.setState()` 実装未完了

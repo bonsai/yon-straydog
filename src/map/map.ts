@@ -34,9 +34,11 @@ export function setOnArrive(cb: (spot: Spot) => void): void {
 }
 
 function isSpotUnlocked(id: string, completed: string[]): boolean {
-  if (id === 's0' || id === 's1') return true
-  if (id === 's2') return completed.includes('s0') && completed.includes('s1')
-  if (id === 's3') return SPOTS.filter(s => s.id !== 's3').every(s => completed.includes(s.id))
+  if (id === 's0') return true
+  if (id === 's1') return completed.includes('s0')
+  if (id === 's2') return completed.includes('s1')
+  if (id === 's3') return completed.includes('s2')
+  if (id === 's4') return SPOTS.filter(s => s.game !== 'final').every(s => completed.includes(s.id))
   return false
 }
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { registerGameStarters } from '../registry'
 
 describe('registerGameStarters', () => {
-  it('registers all 4 spot starters', () => {
+  it('registers all 5 spot starters', () => {
     const target: Record<string, () => void> = {}
     registerGameStarters(target)
 

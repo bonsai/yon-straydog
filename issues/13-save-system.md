@@ -1,53 +1,42 @@
 # SAVE/LOAD 機能
 
-## 概要
-現在のセーブは `localStorage` に `sd_intro_done`, `sd_4x4_done`, `sd_completed` の3キーのみ。
-スポット到着状態、ストーリー進行度、ツール状態などが永続化されていない。
+> **Status: ✅ Done (2026-07-03)** — `src/save.ts` 実装 + auto-save + `__debug.save` API
 
-## 保存すべき状態
+## 実装
 
-| 項目 | 現在 | 理想 |
-|------|------|------|
-| introDone | ✅ localStorage | ✅ |
-| 4x4 puzzle完了 | ✅ localStorage | ✅ |
-| スポット完了 | ✅ `sd_completed` | ✅ |
-| ストーリー進行度 | ✅ `sd_story_progress` | ✅ |
-| 到着済みスポット | ❌ (メモリのみ) | ❌ → localStorage保存 |
-| ツール(メモ)内容 | ❌ | ❌ → localStorage保存 |
-| 最終GPS位置 | ❌ | ❌ → localStorage保存 |
+### 13.1 統一セーブAPI ✅
+- `src/save.ts` 新規作成
+- `SaveData` インターフェース
+- `saveGame(slot, name)` / `loadGame(slot)` / `listSaves()` / `deleteSave(slot)`
+- `restoreSave(data)` — localStorage に状態復元
+- `exportSave(slot?)` / `importSave(json)` — JSON エクスポート/インポート
 
-## 要件
+### 13.2 自動セーブ ✅
+- `autoSave(slot?)` — デフォルト slot 0, name="auto"
+- トリガー: 4×4パズル完了 / バッジ獲得時 / ゲーム完了時 (`src/main.ts`)
 
-### 13.1 統一セーブAPI
-- `saveGame()` / `loadGame()` 関数を `src/store.ts` または新規 `src/save.ts` に実装
-- 全状態を1つのJSONオブジェクトにまとめて `localStorage.setItem('sd_save', ...)` で保存
-- 読み込み時にまとめて復元
+### 13.3 手動セーブ/ロードUI ✅
+- `__debug.save.save(slot?,name?)` / `.load(slot?)` / `.list()` / `.delete(slot)`
+- `__debug.save.export(slot?)` / `.import(json)`
+- Hash routing: `#debug/save/save/0` / `#debug/save/load/0`
 
-### 13.2 自動セーブ
-- ミニゲームクリア時 → 自動セーブ
-- スポット到着時 → 自動セーブ
-- ストーリー進行時 → 自動セーブ
+### 13.4 複数スロット ✅
+- 0-2 の3スロット (`MAX_SLOTS = 3`)
+- 各スロットに `SaveData` (timestamp + full state)
 
-### 13.3 手動セーブ/ロードUI
-- デバッグメニューに「保存」「読み込み」ボタン
-- `__debug.save.save()` / `__debug.save.load()` / `__debug.save.list()`
-- URLハッシュ: `#debug/save/save` / `#debug/save/load`
+### 13.5 エクスポート/インポート ✅
+- 単一スロット or 全スロットを JSON でエクスポート
+- import でバルク復元
+- クリップボードコピー付き
 
-### 13.4 複数スロット (任意)
-- スロット0〜2 の3世代保存
-- 各スロットに保存日時を記録
-- `__debug.save.list()` でスロット一覧表示
+### 保存する状態
+| 項目 | localStorage key | SaveData field |
+|------|-----------------|----------------|
+| introDone | sd_intro_done | introDone |
+| 4x4 puzzle完了 | sd_4x4_done | puzzleDone |
+| スポット完了 | sd_completed | s0, s1, s2, s3 |
+| ストーリー進行度 | sd_story_progress | storyProgress |
+| メモ内容 | sd_memo | memo |
 
-### 13.5 エクスポート/インポート
-- JSON文字列として出力 (`__debug.save.export()`)
-- JSON文字列から復元 (`__debug.save.import(json)`)
-- スロット一覧と中身を表示
-
-## 実装方針
-- `src/save.ts` を新規作成
-- `SaveData` インターフェースを定義
-- `__debug.save` に全機能を追加
-- E2Eテストで save/load/export/import を検証
-
-## 優先度
-中。localStorage のままでも進行に支障なし。デバッグ体験向上と破損防止が目的。
+## テスト
+- `src/__tests__/save.test.ts` — 16 tests

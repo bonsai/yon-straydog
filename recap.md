@@ -1,83 +1,60 @@
-# Yon-Straydog Project Recap
+# Stray Dog Recap — 2026-07-03 Session
 
-## Overview
-This recap documents the completion of the Yon-Straydog project's file structure reorganization and integration work. The main goals were to:
+## Pull & Integrate (14 commits behind)
+- puyo/simon subdirs → flat files (`puyo.ts`, `simon.ts`, `quiz.ts`)
+- New modules: `db.ts`, `debug-api.ts`, `status.ts`, `game-state.ts`
+- `map/hub.ts` extracted, `story/data.ts` → merged into `story/spots.ts`
+- Chrome extension (`chrome-ext/`), Docker (`Dockerfile`), Playwright e2e (`e2e/`)
+- Story data consolidated into `story/spots.ts`
 
-1. Merge `game-state.ts` and `store.ts` into a unified `status.ts` file
-2. Add `puzzle.ts` to the game directory
-3. Update `registry.ts` to include the new puzzle game starter
-4. Ensure all files are properly integrated and syntactically valid
+## Fixes
+- `vitest.config.ts`: `/gdog.png` alias → `public/gdog.png` (2 test suites were failing)
+- `src/story/adventure.ts`: `closeStory` exported for testing
 
-## Files Modified/Created
+## Issue #12 — Test Coverage (P1/P4/P5)
 
-### 1. `src/status.ts` (New File)
-- **Purpose**: Unified game state management
-- **Contents**:
-  - Combined `GameState` interface from both original files
-  - Merged `GameActions` with proper typing
-  - Added proper TypeScript interfaces for all game elements
-  - Fixed compilation errors from original files
-  - Maintained all functionality from both source files
+| P | Area | File | Tests |
+|---|------|------|-------|
+| P1 | main.ts lifecycle | `src/__tests__/main-lifecycle.test.ts` (new) | 19 |
+| P1 | main.ts exports | `src/main.ts` | — |
+| P4 | Memo persistence | `src/map/__tests__/memo.test.ts` (new) | 4 |
+| P5 | Story buttons | `src/story/__tests__/story-buttons.test.ts` (new) | 8 |
 
-### 2. `src/game/puzzle.ts` (New File)
-- **Purpose**: Implements a 4x4 sliding tile puzzle game
-- **Key Features**:
-  - Tile management with `currentPos` and `correctPos` tracking
-  - State management with `PuzzleState` interface
-  - Tile swapping logic with move counting
-  - Solve detection (`isSolved`)
-  - Selection/swapping mechanics
+## Issue #13 — Save/Load System
 
-### 3. `src/game/registry.ts` (Updated)
-- **Purpose**: Central registry for game starters
-- **Changes**:
-  - Added import for `createPuzzleState` from `puzzle.ts`
-  - Added `s4` starter that creates a puzzle state
-  - Maintained existing starters (s0-s3) for other games
+### Implementation
+- `src/save.ts` (new): `saveGame/loadGame/listSaves/deleteSave/restoreSave/autoSave/exportSave/importSave`
+- Auto-save hooks in `src/main.ts`: puzzle solved / badge earned / game complete
+- `__debug.save` API: save/load/list/delete/export/import + hash routing
+- 3 slots (0-2), full state persistence
+- `src/__tests__/save.test.ts` (new): 16 tests
 
-## Integration Summary
+## E2E Testing (Playwright)
 
-### Game Flow
-1. **Status Management**: `status.ts` now handles all game state, replacing the fragmented state management
-2. **Puzzle System**: `puzzle.ts` provides a complete sliding tile puzzle implementation
-3. **Registry**: `registry.ts` now includes the puzzle game (`s4`) alongside existing games
+- Installed `@playwright/test` + Chromium
+- `playwright.config.ts`: timeout 90s, workers 2, webServer auto-start
+- `e2e/flow.spec.ts`: fixed tests 1-2 (`waitForSelector` for intro)
+- **40/40 tests pass** (6.8min single-worker)
 
-### Key Improvements
-- **Code Organization**: Better separation of concerns with dedicated files for each game system
-- **Type Safety**: All interfaces properly typed with TypeScript
-- **Maintainability**: Clear separation of game logic, UI, and state management
-- **Extensibility**: Easy to add new games by modifying registry entries
+## Final State
 
-## Technical Details
+| Layer | Count | Result |
+|-------|-------|--------|
+| Unit (Vitest) | 29 files / 273 tests | ✅ |
+| E2E (Playwright) | 1 file / 40 tests | ✅ |
+| Build (Vite) | 214.88 kB JS | ✅ |
 
-### Status.ts Structure
-- **GamePhase**: Enumerated game states (`title`, `intro`, `puzzle`, etc.)
-- **AppScreen**: UI screen states
-- **UserPos**: Location coordinates
-- **Step**: Puzzle step definition
-- **SpotInfo**: Location information
-- **GameState**: Comprehensive game state object
-- **GameActions**: Methods to manipulate game state
+**Total: 313 tests pass**
 
-### Puzzle Implementation
-- 4x4 grid with 16 tiles
-- Dragging mechanism for tile movement
-- Move counting and solve detection
-- Visual feedback for correct/incorrect moves
+```
+Dev: http://localhost:5000
+Debug: http://localhost:5000#debug
+```
 
-### Registry Updates
-- s0: Puyo game (existing)
-- s1: Simon game (existing) 
-- s2: Quiz game (existing)
-- s3: Final game (TBD)
-- s4: Puzzle game (newly added)
+## Remaining
 
-## Verification
-All files have been verified for:
-- ✅ Syntax correctness
-- ✅ Type compatibility 
-- ✅ Proper imports
-- ✅ Functionality preservation
-- ✅ No breaking changes to existing functionality
-
-The project is now better organized with clear separation of concerns and improved maintainability.
+| # | Issue | Priority |
+|---|-------|----------|
+| 11 | 実機テスト (GPS/カメラ/iOS Safari) | High |
+| 14 | Surge deploy token | Low |
+| 15 | P2/P3/P6 残テスト (Canvas/Leaflet/status stub) | Low |
