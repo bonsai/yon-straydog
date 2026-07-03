@@ -11,6 +11,7 @@ let dogWanderId: number | null = null
 let onArrive: ((spot: Spot) => void) | null = null
 let arrivedSpots = new Set<string>()
 let isMockMode = false
+let lastUserPos: { lat: number; lng: number } | null = null
 
 // Mock position (YON 2F area)
 const MOCK_POS = { lat: 35.6950, lng: 139.7600 }
@@ -161,6 +162,7 @@ function onPosition(pos: GeolocationPosition): void {
 }
 
 function updateUserPos(lat: number, lng: number): void {
+  lastUserPos = { lat, lng }
   if (userMarker) {
     userMarker.setLatLng([lat, lng])
     map?.panTo([lat, lng])
@@ -205,4 +207,15 @@ export function getDistance(lat1: number, lng1: number, lat2: number, lng2: numb
   const dLng = (lng2 - lng1) * Math.PI / 180
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+export function getCurrentPosition(): { lat: number; lng: number } | null {
+  return lastUserPos
+}
+
+export function mockMoveTo(spotId: string): void {
+  const spot = SPOTS.find(s => s.id === spotId)
+  if (!spot) return
+  updateUserPos(spot.lat, spot.lng)
+  checkArrival(spot)
 }

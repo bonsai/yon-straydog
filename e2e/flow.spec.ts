@@ -121,6 +121,7 @@ test.describe('デバッグモード', () => {
     expect(state).toHaveProperty('completed')
     expect(state).toHaveProperty('badges')
     expect(state).toHaveProperty('introDone')
+    expect(state).toHaveProperty('phase')
   })
 
   test('16. __debug.state.complete() + reset を試す', async ({ page }) => {
@@ -130,6 +131,26 @@ test.describe('デバッグモード', () => {
     await page.evaluate(() => (window as any).__debug.state.reset())
     const resetState = await page.evaluate(() => (window as any).__debug.state.get())
     expect(resetState.badges).toBe(0)
+  })
+
+  test('17. __debug.util.confetti() で紙吹雪を表示', async ({ page }) => {
+    await page.evaluate(() => (window as any).__debug.util.confetti())
+    const particles = page.locator('.confetti')
+    await expect(particles).toHaveCount(40)
+  })
+
+  test('18. __debug.debug.panel() でデバッグパネルを開く', async ({ page }) => {
+    await page.evaluate(() => (window as any).__debug.debug.panel())
+    await expect(page.locator('#debug-panel.open')).toBeVisible()
+    await page.evaluate(() => (window as any).__debug.debug.panelClose())
+    await expect(page.locator('#debug-panel.open')).not.toBeVisible()
+  })
+
+  test('19. __debug.tool でツールを開閉', async ({ page }) => {
+    await page.evaluate(() => (window as any).__debug.tool.memo())
+    await expect(page.locator('#tool-memo.open')).toBeVisible()
+    await page.evaluate(() => (window as any).__debug.tool.hide('memo'))
+    await expect(page.locator('#tool-memo.open')).not.toBeVisible()
   })
 })
 
@@ -143,11 +164,11 @@ test.describe('ツールバー', () => {
     await expect(page.locator('#spot-hub')).toBeVisible()
   })
 
-  test('17. Hub表示時にツールバーが表示される', async ({ page }) => {
+  test('20. Hub表示時にツールバーが表示される', async ({ page }) => {
     await expect(page.locator('#toolbar')).toBeVisible()
   })
 
-  test('18. メモツールを開閉できる', async ({ page }) => {
+  test('21. メモツールを開閉できる', async ({ page }) => {
     await page.locator('#tool-btn-memo').click()
     await expect(page.locator('#tool-memo')).toBeVisible()
     await page.locator('#memo-close').click()
@@ -165,19 +186,19 @@ test.describe('リザルト画面', () => {
     await expect(page.locator('#spot-hub')).toBeVisible()
   })
 
-  test('19. リザルト画面が表示できる', async ({ page }) => {
+  test('22. リザルト画面が表示できる', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.screen.result('s0'))
     await expect(page.locator('#result')).toBeVisible()
     await expect(page.locator('#r-title')).toContainText('バッジを獲得')
   })
 
-  test('20. リザルト「つづける」ボタンでHubに戻る', async ({ page }) => {
+  test('23. リザルト「つづける」ボタンでHubに戻る', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.screen.result('s0'))
     await page.locator('#r-btn').click()
     await expect(page.locator('#spot-hub')).toBeVisible()
   })
 
-  test('21. バッジ進捗が表示される', async ({ page }) => {
+  test('24. バッジ進捗が表示される', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.screen.result('s0'))
     await expect(page.locator('#r-progress')).not.toBeEmpty()
   })
@@ -193,13 +214,13 @@ test.describe('コンプリート画面', () => {
     await expect(page.locator('#spot-hub')).toBeVisible()
   })
 
-  test('22. コンプリート画面のシェア/リトライボタンが存在', async ({ page }) => {
+  test('25. コンプリート画面のシェア/リトライボタンが存在', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.screen.complete())
     await expect(page.locator('#complete-share-btn')).toBeVisible()
     await expect(page.locator('#complete-btn')).toBeVisible()
   })
 
-  test('23. もう一度遊ぶボタンで全リセット→Intro', async ({ page }) => {
+  test('26. もう一度遊ぶボタンで全リセット→Intro', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.screen.complete())
     await page.locator('#complete-btn').click()
     await expect(page.locator('#intro')).toBeVisible()
@@ -216,18 +237,18 @@ test.describe('ストーリー', () => {
     await expect(page.locator('#spot-hub')).toBeVisible()
   })
 
-  test('24. ストーリーモーダルを開ける', async ({ page }) => {
+  test('27. ストーリーモーダルを開ける', async ({ page }) => {
     await page.locator('#hub-story-btn').click()
     await expect(page.locator('#story-mode')).toBeVisible()
   })
 
-  test('25. __debug.story.show() で任意のシーンを表示', async ({ page }) => {
+  test('28. __debug.story.show() で任意のシーンを表示', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.story.show(1))
     await expect(page.locator('#story-mode')).toBeVisible()
     await expect(page.locator('#story-mode-title')).toContainText('さぼうる')
   })
 
-  test('26. ストーリーの次へ/戻るが動作する', async ({ page }) => {
+  test('29. ストーリーの次へ/戻るが動作する', async ({ page }) => {
     await page.evaluate(() => (window as any).__debug.story.show(0))
     await expect(page.locator('#story-mode-next')).toBeVisible()
     await page.locator('#story-mode-next').click()
@@ -236,7 +257,7 @@ test.describe('ストーリー', () => {
 })
 
 test.describe('エッジケース', () => {
-  test('27. 不明なURLでクラッシュしない', async ({ page }) => {
+  test('30. 不明なURLでクラッシュしない', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', err => errors.push(err.message))
     await page.goto('/nonexistent')

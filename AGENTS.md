@@ -2,7 +2,7 @@
 
 ## 仕様と実装の乖離 (2026-07-03 判明)
 
-全214 unit test + 27 E2E test が通るのに UX 仕様 (`docs/straydog-ux.md`) と実装が大きく異なる理由:
+全214 unit test + 30 E2E test が通るのに UX 仕様 (`docs/straydog-ux.md`) と実装が大きく異なる理由:
 
 ### テストは「仕様」ではなく「実装」を検証している
 
@@ -131,13 +131,17 @@ src/
 
 ```ts
 window.__debug = {
-  game: { start(id), puyo(), simon(), quiz(), clear() }
-  map:  { open(), close(), mock() }
-  story:{ show(index), list() }
-  screen:{ hub(), goToHub(), result(spotId), complete() }
-  state: { get(), complete(id), completeAll(), reset(), introDone() }
-  data:  { spots: Spot[], stories: StoryScene[] }
-  help() // console.table で全API出力
+  screen: { show(id), hide(id), hub(), home(), intro(), puzzle(), map(), result(spotId?), complete(), all() }
+  game:   { start(id), puyo(), simon(), quiz(), clear(), list() }
+  map:    { open(), close(), mock(), pos(), moveTo(spotId) }
+  story:  { show(index), list(), adventure(), stop() }
+  tool:   { show(name), hide(name), toolbar(bool), memo(), camera(), mic() }
+  state:  { get(), set(partial), complete(id), completeAll(), reset(), introDone(), phase(p) }
+  data:   { spots, stories, intro, badgeSpots, sceneIndex }
+  debug:  { enable(), panel(), panelClose() }
+  util:   { confetti(), share() }
+  puzzle: { create(shuffle?), solved(state), swap(state, idx) }
+  help()  // console.table
 }
 ```
 
@@ -152,8 +156,8 @@ window.__debug = {
 npm run dev      # 開発サーバ localhost:5000
 npm run build    # dist/ に出力
 npm run test     # vitest run (214 unit tests)
-npm run test:e2e # playwright test (27 E2E tests on localhost:5000)
-npm run test:all # vitest && playwright (241 tests total)
+npm run test:e2e # playwright test (30 E2E tests on localhost:5000)
+npm run test:all # vitest && playwright (244 tests total)
 npm run deploy   # build + surge dist/ straydog.surge.sh
 ```
 

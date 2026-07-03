@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Stray Dog — 迷い犬を探して</title>
+  <script type="module" crossorigin src="./assets/index-COxFTlYX.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-7kfDaRSO.css">
+</head>
+<body>
+
+<div id="screen">
+
+  <!-- ===== INTRO (VN style, text → bg fade) ===== -->
+  <div id="intro" class="screen active">
+    <div id="intro-bg"></div>
+    <button id="intro-skip">スキップ ▶▶</button>
+    <div id="intro-text-area"><div id="intro-text"></div></div>
+    <div class="bottom-bar">
+      <button id="intro-start" class="btn">タップして次へ</button>
+    </div>
+  </div>
+
+  <!-- ===== 4×4 PUZZLE (90% modal) ===== -->
+  <div id="puzzle4">
+    <div id="puzzle4-card">
+      <div id="puzzle4-head">
+        <div>
+          <div id="puzzle4-title">🐕 写真をなおして</div>
+          <div id="puzzle4-hint">タップで選ぶ → もう一度タップで入れ替え</div>
+        </div>
+        <button id="puzzle4-close">✕</button>
+      </div>
+      <div id="puzzle4-body">
+        <div id="puzzle4-grid"></div>
+        <div id="puzzle4-status">操作: 0 回</div>
+        <div id="p4-solved-hint">
+          <div style="font-size:1.6rem;margin-bottom:4px">🐾</div>
+          「さぼうる の レインボウを さがせ」
+        </div>
+      </div>
+      <div id="puzzle4-foot">
+        <button id="p4-go" class="btn">さぼうるへ行く →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HOME ===== -->
+  <div id="home" class="screen">
+    <div class="screen-body">
+      <div class="logo">🐕</div>
+      <h1>Stray Dog</h1>
+      <p>クリアした謎: 4×4 フォトパズル</p>
+      <p style="color:#555;font-size:.7rem">次の目的地: さぼうる</p>
+    </div>
+    <div class="bottom-bar">
+      <button id="btn-start" class="btn">地図を開く</button>
+    </div>
+  </div>
+
+  <!-- ===== MAP ===== -->
+  <div id="map-wrap" class="screen">
+    <div id="map-top">
+      <h2>🐕 Stray Dog</h2>
+      <div class="prog debug-only">進捗 <span id="prog-num">0</span>/4</div>
+    </div>
+    <div id="map"></div>
+    <div id="bottom-sheet">
+      <div id="bs-handle"></div>
+      <div id="bs-title">到着しました</div>
+      <div id="bs-sub">📍 タップして謎を解く</div>
+      <div id="bs-desc">スマホで答えを入力しよう</div>
+      <div id="bs-loading"><div class="spinner"></div>位置情報を取得中...</div>
+      <button id="bs-btn" class="locked">謎を解く</button>
+    </div>
+  </div>
+
+  <!-- ===== TEXT PUZZLE MODAL ===== -->
+  <div id="puzzle-wrap">
+    <div id="puzzle-box">
+      <div id="puzzle-icon">🧩</div>
+      <div id="puzzle-spot"></div>
+      <div id="puzzle-q"></div>
+      <input type="text" id="puzzle-input" placeholder="答えを入力" autocomplete="off">
+      <button id="puzzle-btn">答える</button>
+      <div id="puzzle-fb"></div>
+    </div>
+    <button id="puzzle-close">✕</button>
+  </div>
+
+  <!-- ===== RESULT / BADGE ===== -->
+  <div id="result">
+    <div class="icon" id="r-icon">🐾</div>
+    <h2 id="r-title">見つけた！</h2>
+    <p class="sub" id="r-text">犬の足跡を発見した</p>
+    <div class="badge" id="r-badge">🏅 バッジ獲得</div>
+    <div class="badge-progress" id="r-progress"></div>
+    <button class="btn" id="r-btn">つづける</button>
+  </div>
+
+  <!-- ===== COMPLETE ===== -->
+  <div id="complete">
+    <div class="icon" id="complete-icon">🐕</div>
+    <h2 id="complete-title">犬を見つけた！</h2>
+    <div id="complete-scroll" style="overflow-y:auto;max-height:50vh;padding:0 16px;width:100%">
+      <p id="complete-body" style="color:#aaa;font-size:.85rem;max-width:340px;line-height:1.8;margin:0 auto">
+        足跡をたどって辿り着くと——<br>そこには犬がいた。
+      </p>
+      <div class="reward" style="background:#1a1a2e;border:1px solid #ffd700;border-radius:12px;padding:16px 24px;margin:16px auto;max-width:320px">
+        <h3 style="color:#ffd700;font-size:1rem;margin-bottom:4px">📞 夫妻に電話</h3>
+        <p style="color:#aaa;font-size:.85rem">「見つかりましたよ。大丈夫です。」<br>電話の向こうで、妻の泣き声が聞こえた。</p>
+      </div>
+      <div class="reward" style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:16px 24px;margin:0 auto 12px;max-width:320px">
+        <h3 style="color:#ffd700;font-size:1rem;margin-bottom:4px">🎵 Goldberg 層へ</h3>
+        <p style="color:#666;font-size:.75rem;line-height:1.7">
+          犬は見つかった。<br>
+          だが——ここからが本番だ。<br>
+          YON 3F リビングミュージックで<br>
+          真空管アンプが待っている。
+        </p>
+      </div>
+      <div style="color:#555;font-size:.65rem;line-height:1.6;margin-top:8px;padding:8px 0;border-top:1px solid #1a1a2e;max-width:320px;margin:12px auto 0">
+        <p>🐾 制作: Stray Dog Team</p>
+        <p>🎹 Goldberg Variationen — J.S. Bach</p>
+        <p>📍 神保町・御茶ノ水エリアにて撮影</p>
+      </div>
+    </div>
+    <button class="btn" id="complete-btn" style="margin-top:12px">もう一度遊ぶ 🔄</button>
+  </div>
+
+  <!-- ===== STORY MODE ===== -->
+  <div id="story-mode">
+    <div id="story-mode-card">
+      <div id="story-mode-head">
+        <span id="story-mode-icon"></span>
+        <span id="story-mode-title"></span>
+      </div>
+      <div id="story-mode-scroll">
+        <div id="story-mode-text"></div>
+      </div>
+      <div id="story-mode-foot">
+        <button id="story-mode-prev" class="btn hidden-btn">◀ 戻る</button>
+        <button id="story-mode-next" class="btn">次へ ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SPOT HUB ===== -->
+  <div id="spot-hub" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:#0a0a0f;z-index:30;flex-direction:column;overflow:hidden">
+    <div id="hub-top" style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #222;flex-shrink:0;gap:8px">
+      <span style="font-size:1rem">🐕</span>
+      <span style="color:#ffd700;font-size:.95rem;font-weight:bold;flex:1">ヨリミチ</span>
+      <div id="hub-balls" style="display:flex;gap:4px;font-size:1.1rem">⚪⚪⚪</div>
+    </div>
+    <div id="hub-grid" style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;overflow-y:auto;align-content:start">
+    </div>
+  </div>
+
+  <!-- ===== 4CHAR QUIZ ===== -->
+  <div id="quiz4-game" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:#0a0a0f;z-index:405;flex-direction:column;align-items:center;justify-content:center">
+    <button id="quiz4-close" style="position:absolute;top:max(12px,env(safe-area-inset-top,12px));right:12px;background:rgba(255,255,255,.08);border:none;color:#666;font-size:1.1rem;width:40px;height:40px;border-radius:50%;cursor:pointer;z-index:406">✕</button>
+    <div id="quiz4-card" style="width:min(88vw,320px);background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:28px 24px;text-align:center">
+      <div id="quiz4-icon" style="font-size:2rem;margin-bottom:8px">✍️</div>
+      <div id="quiz4-q" style="color:#e0e0e0;font-size:1rem;margin-bottom:16px;line-height:1.7">□ に入る漢字は？<br><span style="font-size:1.8rem;color:#ffd700">一石□鳥</span></div>
+      <div id="quiz4-hint" style="color:#666;font-size:.75rem;margin-bottom:12px">読みをヒントに漢字1文字を入力</div>
+      <input id="quiz4-input" type="text" placeholder="漢字1文字" autocomplete="off" style="width:80px;padding:14px;border-radius:12px;border:1px solid #444;background:#0a0a0f;color:#fff;font-size:1.3rem;text-align:center;outline:none;caret-color:#ffd700;box-sizing:border-box">
+      <button id="quiz4-btn" style="width:100%;padding:14px;margin-top:14px;background:#ffd700;color:#000;border:none;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer;transition:transform .1s">答える</button>
+      <div id="quiz4-fb" style="font-size:.85rem;margin-top:10px;min-height:1.4em"></div>
+    </div>
+  </div>
+
+  <!-- ===== SIMON GAME ===== -->
+  <div id="simon-game" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:#0a0a0f;z-index:410;flex-direction:column;align-items:center;justify-content:center">
+    <div id="simon-canvas" style="margin-top:-40px"></div>
+    <div id="simon-hint" style="color:#666;font-size:.7rem;margin-top:8px">光った順にタップ</div>
+  </div>
+
+  <!-- ===== ADVENTURE TEXT OVERLAY ===== -->
+  <div id="adventure-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:rgba(10,10,15,.97);z-index:600;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+    <div id="adventure-text" style="color:#e0e0e0;font-size:1.05rem;line-height:2;max-width:360px;margin-bottom:32px"></div>
+    <button id="adventure-btn" class="adventure-btn">タップして次へ →</button>
+  </div>
+
+  <!-- ===== PUYO GAME ===== -->
+  <div id="puyo-game" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:#0a0a0f;z-index:400;flex-direction:column;align-items:center;justify-content:center">
+    <div id="puyo-canvas-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div id="puyo-station-label" style="color:#ffd700;font-size:.9rem;font-weight:bold"></div>
+      <div id="puyo-canvas"></div>
+      <div id="puyo-controls" style="color:#666;font-size:.7rem;display:flex;gap:16px;margin-top:4px">
+        <span>← → 移動</span>
+        <span>↑ 回転</span>
+        <span>↓ 落下</span>
+        <span>Space 即落</span>
+      </div>
+    </div>
+  </div>
+
+
+
+</div>
+
+</body>
+</html>
