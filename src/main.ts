@@ -7,7 +7,7 @@ import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleare
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game-state'
 import { startAdventure, setupStoryButtons, startStoryScene } from './story/adventure'
 import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from './story/spots'
-import { startMap, setOnArrive, stopMap } from './map'
+import { startMap, setOnArrive, stopMap } from './map/map'
 import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './game/sound'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
