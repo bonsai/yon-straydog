@@ -9,6 +9,10 @@ import { startStoryScene, startAdventure, stopAdventure } from './story/adventur
 import { getPhase, setPhase, buildIntroSteps, buildHintSteps, buildStorySteps } from './game-state'
 import { showScreen, showCompleteScreen, showResultScreen, showClearedStory, goToHub, hideEl, confetti, shareResult, enableDebugMode, renderDebugPanel } from './main'
 import { createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
+import {
+  createTable, dropTable, insert, select, selectById,
+  update, remove, count, allTables, exportDb, importDb, clearDb, seedFromUrl,
+} from './db'
 
 export function setupDebugAPI(): void {
   if (!import.meta.env.DEV && !location.hash.startsWith('#debug')) return
@@ -234,6 +238,40 @@ export function setupDebugAPI(): void {
       },
     },
 
+    // ── Database ──
+    db: {
+      createTable: (name: string) => createTable(name),
+      dropTable: (name: string) => dropTable(name),
+      insert: (table: string, row: Record<string, unknown>) => insert(table, row),
+      select: (table: string, query?: Record<string, unknown>) => select(table, query),
+      selectById: (table: string, id: string) => selectById(table, id),
+      update: (table: string, id: string, changes: Record<string, unknown>) => update(table, id, changes),
+      remove: (table: string, id: string) => remove(table, id),
+      count: (table: string) => count(table),
+      tables: () => allTables(),
+      export: () => exportDb(),
+      import: (data: Record<string, unknown[]>) => importDb(data),
+      clear: () => clearDb(),
+      seed: () => seedFromUrl('/test.db'),
+      loadSave: (id: string) => {
+        const row = selectById<{ id: string; name: string; introDone: boolean; puzzleDone: boolean; s0: boolean; s1: boolean; s2: boolean; s3: boolean }>('saves', id)
+        if (!row) { console.warn('[db] save not found:', id); return }
+        useDogStore.getState().reset()
+        if (row.introDone) useDogStore.getState().setIntroDone()
+        if (row.puzzleDone) localStorage.setItem('sd_4x4_done', 'true')
+        if (row.s0) useDogStore.getState().completeSpot('s0')
+        if (row.s1) useDogStore.getState().completeSpot('s1')
+        if (row.s2) useDogStore.getState().completeSpot('s2')
+        if (row.s3) useDogStore.getState().completeSpot('s3')
+        console.log('[db] loaded save:', row.name, row)
+        return row
+      },
+      loadSpell: (code: string) => {
+        const sp = (window as any).__debug?.spell
+        if (sp) sp.decode(code)
+      },
+    },
+
     // ── Help ──
     help: () => {
       console.log('=== __debug API ===')
@@ -312,6 +350,23 @@ export function setupDebugAPI(): void {
       console.log('  encode()       — show current spell code (4 hiragana)')
       console.log('  decode(code)   — restore state from spell code')
       console.log('  list()         — show checkpoint spell codes')
+      console.groupEnd()
+      console.group('db')
+      console.log('  createTable(n) — create table')
+      console.log('  dropTable(n)   — drop table')
+      console.log('  insert(t,row)  — insert row')
+      console.log('  select(t, q?)  — query rows')
+      console.log('  selectById(t,i) — get row by id')
+      console.log('  update(t,i,c)  — update row')
+      console.log('  remove(t,i)    — delete row')
+      console.log('  count(t)       — row count')
+      console.log('  tables()       — list tables')
+      console.log('  export()       — export all data')
+      console.log('  import(d)      — import data')
+      console.log('  clear()        — clear all data')
+      console.log('  seed()         — load test.db seed data')
+      console.log('  loadSave(id)   — restore game from save row')
+      console.log('  loadSpell(code) — restore from spell code')
       console.groupEnd()
     },
   }

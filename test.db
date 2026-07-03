@@ -1,0 +1,60 @@
+{
+  "saves": [
+    {
+      "id": "checkpoint-reset",
+      "name": "🔄 リセット状態",
+      "introDone": false, "puzzleDone": false,
+      "s0": false, "s1": false, "s2": false, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-intro",
+      "name": "📖 イントロ完了",
+      "introDone": true, "puzzleDone": false,
+      "s0": false, "s1": false, "s2": false, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-puzzle",
+      "name": "🧩 パズル完了",
+      "introDone": true, "puzzleDone": true,
+      "s0": false, "s1": false, "s2": false, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-s0",
+      "name": "🍨 さぼうる完了",
+      "introDone": true, "puzzleDone": true,
+      "s0": true, "s1": false, "s2": false, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-s1",
+      "name": "🔔 響完了",
+      "introDone": true, "puzzleDone": true,
+      "s0": true, "s1": true, "s2": false, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-s2",
+      "name": "🗽 神田橋公園完了",
+      "introDone": true, "puzzleDone": true,
+      "s0": true, "s1": true, "s2": true, "s3": false,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    },
+    {
+      "id": "checkpoint-complete",
+      "name": "🎵 全コンプリート",
+      "introDone": true, "puzzleDone": true,
+      "s0": true, "s1": true, "s2": true, "s3": true,
+      "spell": null,
+      "created": "2026-07-03T00:00:00Z"
+    }
+  ]
+}

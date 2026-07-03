@@ -336,4 +336,35 @@ test.describe('エッジケース', () => {
     expect(list[0].name).toContain('リセット')
     expect(list[6].name).toContain('コンプリート')
   })
+
+  test('38. __debug.db でテーブルCRUD操作', async ({ page }) => {
+    await page.goto('/#debug')
+    await page.evaluate(() => (window as any).__debug.db.createTable('test_e2e'))
+    const before = await page.evaluate(() => (window as any).__debug.db.count('test_e2e'))
+    expect(before).toBe(0)
+    await page.evaluate(() => (window as any).__debug.db.insert('test_e2e', { id: 'e2e-1', name: 'E2Eテスト', value: 42 }))
+    const after = await page.evaluate(() => (window as any).__debug.db.count('test_e2e'))
+    expect(after).toBe(1)
+    const row = await page.evaluate(() => (window as any).__debug.db.selectById('test_e2e', 'e2e-1'))
+    expect(row.name).toBe('E2Eテスト')
+  })
+
+  test('39. __debug.db.seed() で test.db を読み込み', async ({ page }) => {
+    await page.goto('/#debug')
+    const count = await page.evaluate(() => (window as any).__debug.db.seed())
+    expect(count).toBeGreaterThanOrEqual(7)
+    const saves = await page.evaluate(() => (window as any).__debug.db.select('saves'))
+    expect(saves.length).toBeGreaterThanOrEqual(7)
+  })
+
+  test('40. __debug.db.loadSave() でテストセーブを復元', async ({ page }) => {
+    await page.goto('/#debug')
+    await page.evaluate(() => (window as any).__debug.db.seed())
+    const row = await page.evaluate(() => (window as any).__debug.db.loadSave('checkpoint-complete'))
+    expect(row).not.toBeNull()
+    expect(row.s0).toBe(true)
+    expect(row.s1).toBe(true)
+    expect(row.s2).toBe(true)
+    expect(row.s3).toBe(true)
+  })
 })
