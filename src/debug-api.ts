@@ -155,6 +155,85 @@ export function setupDebugAPI(): void {
       swap: (state: ReturnType<typeof createPuzzleState>, idx: number) => selectOrSwap(state, idx),
     },
 
+    // ── 復活の呪文 ──
+    spell: {
+      HIRA: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん',
+
+      encode: function () {
+        const s = useDogStore.getState()
+        const c = s.completed
+        const n = (s.introDone ? 1 : 0)
+          | (localStorage.getItem('sd_4x4_done') === 'true' ? 2 : 0)
+          | (c.includes('s0') ? 4 : 0)
+          | (c.includes('s1') ? 8 : 0)
+          | (c.includes('s2') ? 16 : 0)
+          | (c.includes('s3') ? 32 : 0)
+        const h = this.HIRA.split('')
+        const c0 = h[n % 46]
+        const c1 = h[Math.floor(n / 46) % 46]
+        const chk = (n + 7) * 13 % 46
+        const c2 = h[chk]
+        const c3 = h[Math.floor(chk / 7) % 46]
+        const code = c0 + c1 + c2 + c3
+        console.log('[spell] 復活の呪文: %s', code)
+        console.log('[spell] 状態: intro=%s puzzle=%s s0=%s s1=%s s2=%s s3=%s',
+          s.introDone, localStorage.getItem('sd_4x4_done') === 'true',
+          c.includes('s0'), c.includes('s1'), c.includes('s2'), c.includes('s3'))
+        return code
+      },
+
+      decode: function (code: string) {
+        if (code.length !== 4) { console.warn('[spell] 4文字で入力してください'); return null }
+        const idx = [...code].map(c => this.HIRA.indexOf(c))
+        if (idx.some(i => i < 0)) { console.warn('[spell] ひらがな以外の文字が含まれています'); return null }
+        const n = idx[0] + idx[1] * 46
+        const chk = (n + 7) * 13 % 46
+        if (idx[2] !== chk || idx[3] !== Math.floor(chk / 7) % 46) { console.warn('[spell] チェックサム不一致: 無効な呪文です'); return null }
+        const st = {
+          introDone: !!(n & 1),
+          puzzleDone: !!(n & 2),
+          s0: !!(n & 4), s1: !!(n & 8), s2: !!(n & 16), s3: !!(n & 32),
+        }
+        console.log('[spell] 復活の呪文 確認: %s', code)
+        console.log('[spell] 復元状態: intro=%s puzzle=%s s0=%s s1=%s s2=%s s3=%s',
+          st.introDone, st.puzzleDone, st.s0, st.s1, st.s2, st.s3)
+        // 状態を適用
+        useDogStore.getState().reset()
+        if (st.introDone) useDogStore.getState().setIntroDone()
+        if (st.puzzleDone) localStorage.setItem('sd_4x4_done', 'true')
+        if (st.s0) useDogStore.getState().completeSpot('s0')
+        if (st.s1) useDogStore.getState().completeSpot('s1')
+        if (st.s2) useDogStore.getState().completeSpot('s2')
+        if (st.s3) useDogStore.getState().completeSpot('s3')
+        console.log('[spell] 復元完了！')
+        return st
+      },
+
+      list: function () {
+        // 主要チェックポイントの呪文を表示
+        const table = [
+          { name: '🔄 リセット状態', code: this.encodeFrom({ intro: false, puzzle: false, s0: false, s1: false, s2: false, s3: false }) },
+          { name: '📖 イントロ完了', code: this.encodeFrom({ intro: true, puzzle: false, s0: false, s1: false, s2: false, s3: false }) },
+          { name: '🧩 パズル完了', code: this.encodeFrom({ intro: true, puzzle: true, s0: false, s1: false, s2: false, s3: false }) },
+          { name: '🍨 s0(さぼうる)完了', code: this.encodeFrom({ intro: true, puzzle: true, s0: true, s1: false, s2: false, s3: false }) },
+          { name: '🔔 s1(響)完了', code: this.encodeFrom({ intro: true, puzzle: true, s0: true, s1: true, s2: false, s3: false }) },
+          { name: '🗽 s2(神田橋)完了', code: this.encodeFrom({ intro: true, puzzle: true, s0: true, s1: true, s2: true, s3: false }) },
+          { name: '🎵 全コンプリート', code: this.encodeFrom({ intro: true, puzzle: true, s0: true, s1: true, s2: true, s3: true }) },
+        ]
+        console.table(table)
+        return table
+      },
+
+      encodeFrom: function (st: { intro: boolean; puzzle: boolean; s0: boolean; s1: boolean; s2: boolean; s3: boolean }) {
+        const n = (st.intro ? 1 : 0) | (st.puzzle ? 2 : 0) | (st.s0 ? 4 : 0) | (st.s1 ? 8 : 0) | (st.s2 ? 16 : 0) | (st.s3 ? 32 : 0)
+        const h = this.HIRA.split('')
+        const c0 = h[n % 46]; const c1 = h[Math.floor(n / 46) % 46]
+        const chk = (n + 7) * 13 % 46
+        const c2 = h[chk]; const c3 = h[Math.floor(chk / 7) % 46]
+        return c0 + c1 + c2 + c3
+      },
+    },
+
     // ── Help ──
     help: () => {
       console.log('=== __debug API ===')
@@ -228,6 +307,11 @@ export function setupDebugAPI(): void {
       console.log('  create(?)      — create 4x4 puzzle state')
       console.log('  solved(state)  — check if solved')
       console.log('  swap(s, idx)   — select or swap tile')
+      console.groupEnd()
+      console.group('spell')
+      console.log('  encode()       — show current spell code (4 hiragana)')
+      console.log('  decode(code)   — restore state from spell code')
+      console.log('  list()         — show checkpoint spell codes')
       console.groupEnd()
     },
   }

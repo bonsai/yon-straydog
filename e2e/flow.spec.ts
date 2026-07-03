@@ -301,4 +301,39 @@ test.describe('エッジケース', () => {
     await page.goto('/#debug/game/puyo')
     await expect(page.locator('#puyo-game')).toBeVisible({ timeout: 5000 })
   })
+
+  test('35. __debug.spell.encode() で4文字ひらがなコードを生成', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('sd_intro_done', 'true')
+      localStorage.setItem('sd_4x4_done', 'true')
+    })
+    await page.goto('/#debug')
+    const code = await page.evaluate(() => (window as any).__debug.spell.encode())
+    expect(code).toMatch(/^[あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん]{4}$/)
+  })
+
+  test('36. __debug.spell.decode() で状態を復元', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('sd_intro_done', 'true')
+      localStorage.setItem('sd_4x4_done', 'true')
+    })
+    await page.goto('/#debug')
+    // 全クリア状態の呪文をエンコード→デコード
+    await page.evaluate(() => (window as any).__debug.state.completeAll())
+    const code = await page.evaluate(() => (window as any).__debug.spell.encode())
+    await page.evaluate(() => (window as any).__debug.state.reset())
+    const restored = await page.evaluate((c) => (window as any).__debug.spell.decode(c), code)
+    expect(restored).not.toBeNull()
+    expect(restored.s0).toBe(true)
+    expect(restored.s1).toBe(true)
+    expect(restored.s2).toBe(true)
+  })
+
+  test('37. __debug.spell.list() でチェックポイント一覧を表示', async ({ page }) => {
+    await page.goto('/#debug')
+    const list = await page.evaluate(() => (window as any).__debug.spell.list())
+    expect(list.length).toBe(7)
+    expect(list[0].name).toContain('リセット')
+    expect(list[6].name).toContain('コンプリート')
+  })
 })

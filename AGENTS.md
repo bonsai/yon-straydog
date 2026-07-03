@@ -159,8 +159,22 @@ window.__debug = {
   debug:  { enable(), panel(), panelClose() }
   util:   { confetti(), share() }
   puzzle: { create(shuffle?), solved(state), swap(state, idx) }
+  spell:  { encode(), decode(code), list() }
   help()  // console.table
-}
+
+### 復活の呪文 (`#debug/spell`)
+
+6状態(intro/puzzle/s0/s1/s2/s3)を4文字ひらがなに圧縮。チェックサム付き。
+
+```js
+__debug.spell.encode()           // 現在状態→4文字
+__debug.spell.decode('あいうえ')  // 呪文→状態復元
+__debug.spell.list()             // 主要チェックポイント一覧
+```
+
+URL: `/#debug/spell/decode/あいうえ` または `/#debug/spell/list`
+
+全37テスト (214 unit + 37 E2E) が master で PASS。
 ```
 
 ### debug-only class
