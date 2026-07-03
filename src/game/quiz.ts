@@ -1,14 +1,14 @@
 import { completeCurrentSpot } from '../hub'
 import { playCorrect, playWrong } from './sound'
 
-interface Quiz {
+export interface Quiz {
   hint: string
   missing: string
   reading: string
   full: string
 }
 
-const QUIZZES: Quiz[] = [
+export const QUIZZES: Quiz[] = [
   { hint: '一石□鳥', missing: '二', reading: 'いっせきにちょう', full: '一石二鳥' },
   { hint: '一期一□', missing: '会', reading: 'いちごいちえ', full: '一期一会' },
   { hint: '一騎□千', missing: '当', reading: 'いっきとうせん', full: '一騎当千' },

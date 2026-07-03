@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { createPuyoState, spawnPiece, movePiece, rotatePiece, hardDrop, tick } from '../puyo/logic.ts'
-import { createEmptyGrid, ROWS, COLS } from '../puyo/types.ts'
-import type { Grid, Piece, PuyoState } from '../puyo/types.ts'
+import { createPuyoState, spawnPiece, movePiece, rotatePiece, hardDrop, tick, createEmptyGrid } from '../puyo.ts'
+import { ROWS, COLS } from '../puyo.ts'
+import type { Grid, Piece, PuyoState } from '../puyo.ts'
 
 describe('puyo logic', () => {
   describe('createPuyoState', () => {

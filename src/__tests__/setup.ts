@@ -28,3 +28,10 @@ class MockAudioContext {
 }
 
 Object.defineProperty(globalThis, 'AudioContext', { value: MockAudioContext, configurable: true })
+
+Object.defineProperty(navigator, 'mediaDevices', {
+  value: {
+    getUserMedia: vi.fn(() => Promise.reject(new Error('mock: permission denied'))),
+  },
+  configurable: true,
+})

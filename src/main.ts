@@ -9,6 +9,7 @@ import { startAdventure, setupStoryButtons, startStoryScene } from './story/adve
 import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from './story/spots'
 import { startMap, setOnArrive, stopMap } from './map/map'
 import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './game/sound'
+import { setupDebugAPI } from './debug-api'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -23,7 +24,7 @@ function qs<T extends HTMLElement = HTMLElement>(sel: string, parent?: HTMLEleme
 // =====================================================
 // SCREEN TRANSITIONS
 // =====================================================
-function switchScreen(fromId: string, toId: string): void {
+export function switchScreen(fromId: string, toId: string): void {
   const fromEl = document.getElementById(fromId)
   const toEl = document.getElementById(toId)
   if (!fromEl || !toEl) return
@@ -39,7 +40,7 @@ function switchScreen(fromId: string, toId: string): void {
   fromEl.addEventListener('animationend', onExitEnd)
 }
 
-function showScreen(id: string): void {
+export function showScreen(id: string): void {
   for (const el of document.querySelectorAll('.screen')) el.classList.remove('active', 'screen-enter', 'screen-exit')
   const el = document.getElementById(id)
   if (el) el.classList.add('active')
@@ -213,7 +214,7 @@ function startSpotMap(spotId: string): void {
   startMap(useDogStore.getState().completed)
 }
 
-function showClearedStory(spotId: string): void {
+export function showClearedStory(spotId: string): void {
   const spot = SPOTS.find(s => s.id === spotId)
   if (!spot) { goToHub(); return }
   const badgeCount = useDogStore.getState().completed.length
@@ -230,7 +231,7 @@ function showClearedStory(spotId: string): void {
   startAdventure()
 }
 
-function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
+export function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
   showTools(false)
   const r = document.getElementById('result')
   if (!r) return
@@ -250,13 +251,13 @@ function showResultScreen(icon: string, title: string, badge: string, subtitle: 
   }
 }
 
-function goToHub(): void {
+export function goToHub(): void {
   setPhase('hub')
   showTools(true)
   startSpotHub()
 }
 
-function showCompleteScreen(): void {
+export function showCompleteScreen(): void {
   setPhase('complete')
   showTools(false)
   const el = document.getElementById('complete')
@@ -266,7 +267,7 @@ function showCompleteScreen(): void {
   confetti()
 }
 
-function confetti(): void {
+export function confetti(): void {
   for (let i = 0; i < 40; i++) {
     const c = document.createElement('div')
     c.className = 'confetti'
@@ -280,20 +281,20 @@ function confetti(): void {
   }
 }
 
-function hideEl(id: string): void { const el = document.getElementById(id); if (el) el.style.display = 'none' }
+export function hideEl(id: string): void { const el = document.getElementById(id); if (el) el.style.display = 'none' }
 
 function openStoryModal(idx: number): void {
   startStoryScene(idx)
 }
 
-function enableDebugMode(): void {
+export function enableDebugMode(): void {
   document.querySelectorAll('.debug-only').forEach(el => (el as HTMLElement).classList.remove('debug-only'))
 }
 
 // =====================================================
 // DEBUG PANEL
 // =====================================================
-function renderDebugPanel(): void {
+export function renderDebugPanel(): void {
   const body = document.getElementById('debug-body')
   if (!body) return
   const { completed } = useDogStore.getState()
@@ -356,6 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   registerGameStarters()
   setupStoryButtons()
   setupTools()
+  setupDebugAPI()
 
   if (location.hash === '#debug') {
     enableDebugMode()
@@ -440,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 })
 
-function shareResult(): void {
+export function shareResult(): void {
   const text = [
     '🐕 Stray Dog をクリアした！',
     '',

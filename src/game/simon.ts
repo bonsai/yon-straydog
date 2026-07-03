@@ -252,6 +252,7 @@ export function closeSimon(): void {
   running = false
   const el = document.getElementById('simon-game')
   if (el) el.style.display = 'none'
+  document.removeEventListener('keydown', onKeyDown)
   if (animId) { cancelAnimationFrame(animId); animId = null }
   if (state.phase === 'clear') completeCurrentSpot()
 }

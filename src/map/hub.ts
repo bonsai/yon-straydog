@@ -124,14 +124,14 @@ export function completeCurrentSpot(): void {
   }
 }
 
-function isSpotUnlocked(id: string, completed: string[]): boolean {
+export function isSpotUnlocked(id: string, completed: string[]): boolean {
   if (id === 's0' || id === 's1') return true
   if (id === 's2') return completed.includes('s0') && completed.includes('s1')
   if (id === 's3') return getBadgeCount(completed) >= 3
   return false
 }
 
-function spotLockReason(id: string, completed: string[]): string {
+export function spotLockReason(id: string, completed: string[]): string {
   if (id === 's2') return 'まず さぼうる と 響 を巡ろう'
   if (id === 's3') {
     const n = getBadgeCount(completed)

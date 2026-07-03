@@ -156,7 +156,7 @@ function onPosition(pos: GeolocationPosition): void {
   for (const spot of SPOTS) {
     if (arrivedSpots.has(spot.id)) continue
     const dist = getDistance(latitude, longitude, spot.lat, spot.lng)
-    if (dist < 50) checkArrival(spot)
+    if (dist < 10) checkArrival(spot)
   }
 }
 
@@ -199,7 +199,7 @@ function showBottomSheet(icon: string, title: string, desc: string, state: 'load
   }
 }
 
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+export function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLng = (lng2 - lng1) * Math.PI / 180

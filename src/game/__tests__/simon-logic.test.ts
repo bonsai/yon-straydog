@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createSimonState, generateSequence, tapNote, canAdvance, advance } from '../simon/logic.ts'
+import { createSimonState, generateSequence, tapNote, canAdvance, advance } from '../simon.ts'
 
 describe('simon logic', () => {
   describe('createSimonState', () => {
