@@ -1,3 +1,5 @@
+import { INTRO_LINES } from './story/spots'
+
 export type GamePhase =
   | 'title'
   | 'intro'
@@ -65,16 +67,13 @@ export function clearSteps(): void {
 }
 
 export function buildIntroSteps(onDone: () => void): Step[] {
-  return [
-    { type: 'text', text: '壁のQRコードを読み取ると、そこには ひと組の夫妻の姿があった。', auto: true },
-    { type: 'text', text: '「あの…すみません。うちの犬がいなくなってしまったんです。」', auto: true },
-    { type: 'text', text: '「妻が妊娠中で、動けなくて…どうか…」', auto: true },
-    { type: 'text', text: 'あなたは夫妻の代わりに、犬を探すことにした——', auto: true },
-    { type: 'text', text: '夫妻は一枚の写真を差し出した。だが——写真は砕け散っている。', auto: true },
-    { type: 'text', text: '元にもどせばなにかわかるかもしれない。', auto: true },
-    { type: 'choice', text: 'パズルに挑戦しますか？', choiceId: 'intro_puzzle' },
-    { type: 'action', action: onDone, nextPhase: 'puzzle' },
-  ]
+  const steps: Step[] = []
+  for (const line of INTRO_LINES) {
+    steps.push({ type: 'text', text: line.text, auto: true })
+  }
+  steps.push({ type: 'choice', text: 'パズルに挑戦しますか？', choiceId: 'intro_puzzle' })
+  steps.push({ type: 'action', action: onDone, nextPhase: 'puzzle' })
+  return steps
 }
 
 export function buildHintSteps(spotName: string, hint: string, onPlay: () => void): Step[] {

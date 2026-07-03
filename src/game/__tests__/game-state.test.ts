@@ -3,8 +3,8 @@ import {
   getPhase, setPhase, setSteps, getCurrentStep,
   advanceStep, hasMoreSteps, clearSteps,
   buildIntroSteps, buildHintSteps, buildStorySteps,
-} from '../game-state.ts'
-import type { GamePhase } from '../game-state.ts'
+} from '../../game-state.js'
+import type { GamePhase } from '../../game-state.js'
 
 describe('game-state', () => {
   beforeEach(() => {

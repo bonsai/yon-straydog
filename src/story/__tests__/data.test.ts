@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { INTRO_LINES, STORY_SCENES } from '../data.ts'
+import { INTRO_LINES, STORY_SCENES } from '../spots'
 
 describe('story data', () => {
   describe('INTRO_LINES', () => {

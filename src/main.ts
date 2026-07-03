@@ -1,15 +1,14 @@
 import './style.css'
 import bgImage from '/gdog.png'
 import { useDogStore } from './store'
-import { STORY_SCENES, INTRO_LINES } from './story/data'
-import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle/puzzle'
+import { STORY_SCENES, INTRO_LINES } from './story/spots'
+import { type PuzzleState, createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
 import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './hub'
-import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game/game-state'
-import { startAdventure } from './story/adventure'
-import { setupStoryButtons, startStoryScene } from './story/story-mode'
-import { SPOTS, type Spot, type SpotId } from './story/spots'
+import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game-state'
+import { startAdventure, setupStoryButtons, startStoryScene } from './story/adventure'
+import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from './story/spots'
 import { startMap, setOnArrive, stopMap } from './map'
-import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './sound'
+import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './game/sound'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -196,8 +195,6 @@ function onPuzzleComplete(): void {
 // =====================================================
 // SPOT FLOW
 // =====================================================
-const SPOT_TO_SCENE: Record<SpotId, number> = { s0: 1, s1: 2, s2: 3, s3: 4 }
-
 function startSpotMap(spotId: string): void {
   setPhase('play')
   showTools(true)
@@ -217,17 +214,15 @@ function startSpotMap(spotId: string): void {
 }
 
 function showClearedStory(spotId: string): void {
-  const sceneIdx = SPOT_TO_SCENE[spotId]
-  const scene = STORY_SCENES[sceneIdx]
-  if (!scene) { goToHub(); return }
   const spot = SPOTS.find(s => s.id === spotId)
+  if (!spot) { goToHub(); return }
   const badgeCount = useDogStore.getState().completed.length
-  const paras = scene.paragraphs.filter(p => p)
-  const steps = buildStorySteps(scene.icon, scene.title, paras, () => {
+  const paras = spot.storyParagraphs.filter(p => p)
+  const steps = buildStorySteps(spot.icon, spot.name, paras, () => {
     showResultScreen(
-      spot?.badge ?? '🐾',
+      spot.badge,
       'バッジを獲得！',
-      spot?.badgeName ?? '',
+      spot.badgeName,
       `${badgeCount}/3 のヒント玉を収集`
     )
   }, 'hub', 'つづける')
@@ -326,7 +321,7 @@ function renderDebugPanel(): void {
         ${s.badge ? `<div class="row"><span class="label">バッジ:</span> ${s.badge} ${s.badgeName}</div>` : ''}
         <div class="debug-actions">
           ${s.game !== 'final' ? `<button class="btn-game" data-game="${s.id}">▶ ${gameLabel}</button>` : ''}
-          <button class="btn-story" data-scene="${SPOT_TO_SCENE[s.id]}">📖 ストーリー</button>
+          <button class="btn-story" data-scene="${SPOT_SCENE_INDEX[s.id]}">📖 ストーリー</button>
         </div>
       </div>`
     }).join('')}
@@ -391,10 +386,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (id === 's3' && getBadgeCount(useDogStore.getState().completed) >= 3) {
         useDogStore.getState().completeSpot('s3')
-        // 幕2-4: YON 3F story first, then final scene (幕3: 再会)
-        const spotScene = STORY_SCENES[4]
-        const finalScene = STORY_SCENES[5]
-        const allParas = [...spotScene.paragraphs.filter(p => p), '', ...finalScene.paragraphs.filter(p => p)]
+        const spot = SPOTS.find(s => s.id === 's3')!
+        const allParas = [...spot.storyParagraphs.filter(p => p), '', ...SCENE_REUNION.paragraphs.filter(p => p)]
         const steps = buildStorySteps('🐕', '再会', allParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
         setSteps(steps)
         startAdventure()
@@ -412,7 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setOnSpotCleared((spotId: string) => {
     const store = useDogStore.getState()
     if (store.completed.length >= SPOTS.length) {
-      const finalParas = STORY_SCENES[5].paragraphs.filter(p => p)
+      const finalParas = SCENE_REUNION.paragraphs.filter(p => p)
       const steps = buildStorySteps('🐕', '再会', finalParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
       setSteps(steps)
       startAdventure()

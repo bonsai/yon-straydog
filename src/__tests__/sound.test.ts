@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ensureResumed } from '../sound'
+import { ensureResumed } from '../game/sound'
 
 describe('sound', () => {
   it('ensureResumed does not throw', () => {

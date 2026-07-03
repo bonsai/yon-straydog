@@ -1,6 +1,6 @@
 import { useDogStore } from '../store'
-import { STORY_SCENES } from './data'
-import { buildStorySteps, setPhase, setSteps } from '../game/game-state'
+import { STORY_SCENES } from '../story/spots'
+import { buildStorySteps, setPhase, setSteps } from '../game-state'
 import { startAdventure } from './adventure'
 import { setCurrentGameSpot, showTools } from '../hub'
 import { startMap, stopMap, setOnArrive } from '../map'

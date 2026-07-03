@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearStoryProgress, saveStoryProgressIndex, startStoryScene } from '../../story/story-mode'
+import { clearStoryProgress, saveStoryProgressIndex, startStoryScene } from '../../story/adventure'
 
 describe('story-mode resume', () => {
   beforeEach(() => {

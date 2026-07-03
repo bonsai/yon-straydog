@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { SPOTS, type Spot } from './story/spots'
+import { SPOTS, type Spot } from '../story/spots'
 
 let map: L.Map | null = null
 let userMarker: L.CircleMarker | null = null

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createPuzzleState, isSolved, selectOrSwap } from '../puzzle/puzzle.js'
+import { createPuzzleState, isSolved, selectOrSwap } from '../puzzle.js'
 
 describe('puzzle', () => {
   describe('createPuzzleState', () => {
