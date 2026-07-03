@@ -3,8 +3,8 @@ import { INTRO_LINES, STORY_SCENES } from '../spots'
 
 describe('story data', () => {
   describe('INTRO_LINES', () => {
-    it('has 9 lines', () => {
-      expect(INTRO_LINES.length).toBe(9)
+    it('has 13 lines', () => {
+      expect(INTRO_LINES.length).toBe(13)
     })
 
     it('every line has a speed value', () => {
