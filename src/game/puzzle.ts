@@ -9,10 +9,8 @@ export interface PuzzleState {
   moves: number
 }
 
-const SIZE = 4
-
-const createInitialTiles = (): Tile[] =>
-  Array.from({ length: SIZE * SIZE }, (_, i) => ({ currentPos: i, correctPos: i }))
+const createTiles = (size: number): Tile[] =>
+  Array.from({ length: size * size }, (_, i) => ({ currentPos: i, correctPos: i }))
 
 const shuffleTiles = (tiles: Tile[]): Tile[] => {
   const pos = tiles.map(t => t.currentPos)
@@ -26,8 +24,8 @@ const shuffleTiles = (tiles: Tile[]): Tile[] => {
   return tiles.map((t, i) => ({ ...t, currentPos: pos[i] }))
 }
 
-export const createPuzzleState = (shuffled: boolean): PuzzleState => {
-  const tiles = shuffled ? shuffleTiles(createInitialTiles()) : createInitialTiles()
+export const createPuzzleState = (shuffled: boolean, size = 4): PuzzleState => {
+  const tiles = shuffled ? shuffleTiles(createTiles(size)) : createTiles(size)
   return { tiles, selectedIdx: null, moves: 0 }
 }
 

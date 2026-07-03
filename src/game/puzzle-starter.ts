@@ -1,12 +1,11 @@
-// Puzzle starter — wraps 4x4 puzzle for use as spot game on s0
 import { createPuzzleState, isSolved, selectOrSwap, type PuzzleState } from './puzzle'
 import { completeCurrentSpot } from '../map/hub'
 import { playCorrect } from './sound'
 import bgImage from '/gdog-square.png'
 
 export function PuzzleStarter(): void {
-  const SIZE = 4
-  let pState: PuzzleState = createPuzzleState(true)
+  const SIZE = 2
+  let pState: PuzzleState = createPuzzleState(true, SIZE)
 
   const gameEl = document.getElementById('puzzle4')
   const grid = document.getElementById('puzzle4-grid')
@@ -15,9 +14,8 @@ export function PuzzleStarter(): void {
   const goBtn = document.getElementById('p4-go') as HTMLButtonElement
   if (!gameEl || !grid || !status || !solvedHint || !goBtn) return
 
-  // Set puzzle background to dog image
   const style = document.createElement('style')
-  style.textContent = `.p4-tile{background-image:url(${bgImage});background-size:400% 400%}`
+  style.textContent = `.p4-tile{background-image:url(${bgImage});background-size:200% 200%}`
   document.head.appendChild(style)
 
   gameEl.style.display = 'flex'
@@ -34,7 +32,7 @@ export function PuzzleStarter(): void {
       div.className = 'p4-tile'
       if (pState.selectedIdx !== null && pState.selectedIdx === i) div.classList.add('selected')
       if (t.currentPos === t.correctPos) div.classList.add('in-place')
-      div.style.backgroundPosition = `${(col/3)*100}% ${(row/3)*100}%`
+      div.style.backgroundPosition = `${col * 100}% ${row * 100}%`
       div.dataset.idx = String(i)
       div.addEventListener('click', () => onTap(i))
       grid.appendChild(div)

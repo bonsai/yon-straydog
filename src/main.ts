@@ -279,7 +279,7 @@ export function renderDebugPanel(): void {
       const done = completed.includes(s.id)
       const unlocked = s.id === 's0' || s.id === 's1' || completed.includes('s0') && completed.includes('s1') || done
       const lockStatus = done ? 'done' : unlocked ? 'unlocked' : 'locked'
-      const gameLabel = { puzzle: '4×4パズル', puyo: 'ぷよぷよ', simon: 'シモン', quiz4: 'クイズ', final: '最終' }[s.game]
+      const gameLabel = { puzzle: '2×2パズル', puyo: 'ぷよぷよ', simon: 'シモン', quiz4: 'クイズ', final: '最終' }[s.game]
       return `<div class="debug-card">
         <h3>${s.icon} ${s.name} <span class="tag ${lockStatus}">${lockStatus}</span></h3>
         <div class="row"><span class="label">ID:</span> ${s.id}</div>
