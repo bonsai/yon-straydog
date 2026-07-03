@@ -125,9 +125,27 @@ src/
 
 ## デバッグ
 
-`http://localhost:5000/#debug` でデバッグモード有効。
+### URLハッシュルーティング
 
-### window.__debug API (`src/debug-api.ts`)
+`#debug/<group>/<method>/<arg1>/<arg2>/...` で全APIメソッドをURLから呼び出せる。
+
+例:
+- `http://localhost:5000/#debug` — デバッグモード有効化
+- `http://localhost:5000/#debug/screen/hub` — Hub画面
+- `http://localhost:5000/#debug/screen/complete` — コンプリート画面
+- `http://localhost:5000/#debug/story/marathon` — ストーリーマラソン
+- `http://localhost:5000/#debug/game/puyo` — ぷよぷよ起動
+- `http://localhost:5000/#debug/game/simon` — シモン起動
+- `http://localhost:5000/#debug/map/mock` — モックGPS地図
+- `http://localhost:5000/#debug/story/show/1` — シーン1を表示
+- `http://localhost:5000/#debug/state/reset` — 全リセット
+- `http://localhost:5000/#debug/util/confetti` — 紙吹雪
+
+数値引数は自動パースされる (e.g. `show/1` → `show(1)`)。
+
+### window.__debug API
+
+`#debug` 有効時、ブラウザコンソールから全操作可能:
 
 ```ts
 window.__debug = {

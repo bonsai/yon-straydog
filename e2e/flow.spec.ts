@@ -277,4 +277,28 @@ test.describe('エッジケース', () => {
     await page.waitForTimeout(1000)
     expect(errors.length).toBe(0)
   })
+
+  test('32. URLハッシュ #debug/screen/complete でComplete画面表示', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('sd_intro_done', 'true')
+      localStorage.setItem('sd_4x4_done', 'true')
+    })
+    await page.goto('/#debug/screen/complete')
+    await expect(page.locator('#complete')).toBeVisible({ timeout: 5000 })
+  })
+
+  test('33. URLハッシュ #debug/story/marathon でストーリーマラソン', async ({ page }) => {
+    await page.goto('/#debug/story/marathon')
+    await expect(page.locator('#story-mode')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('#story-mode-title')).toContainText('幕1')
+  })
+
+  test('34. URLハッシュ #debug/game/puyo でぷよぷよ起動', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('sd_intro_done', 'true')
+      localStorage.setItem('sd_4x4_done', 'true')
+    })
+    await page.goto('/#debug/game/puyo')
+    await expect(page.locator('#puyo-game')).toBeVisible({ timeout: 5000 })
+  })
 })

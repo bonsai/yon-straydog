@@ -11,7 +11,7 @@ import { showScreen, showCompleteScreen, showResultScreen, showClearedStory, goT
 import { createPuzzleState, isSolved, selectOrSwap } from './game/puzzle'
 
 export function setupDebugAPI(): void {
-  if (!import.meta.env.DEV && location.hash !== '#debug') return
+  if (!import.meta.env.DEV && !location.hash.startsWith('#debug')) return
 
   const api = {
     // ── Screens ──
@@ -237,6 +237,36 @@ export function setupDebugAPI(): void {
   })
   console.log('[debug] __debug API ready')
   console.log('[debug] __debug.help() で全コマンド表示')
+
+  // ── Hash-based command routing ──
+  // URL: #debug/<group>/<method>/<arg1>/<arg2>/...
+  // e.g. #debug/story/marathon, #debug/screen/complete, #debug/game/puyo
+  const hash = location.hash
+  if (hash.startsWith('#debug/')) {
+    const parts = hash.slice(7).split('/').filter(Boolean)
+    // parts[0] = group (e.g. "story"), parts[1] = method (e.g. "marathon")
+    // parts[2..] = args
+    if (parts.length >= 2) {
+      const group = parts[0] as keyof typeof api
+      const method = parts[1]
+      const args = parts.slice(2).map(a => {
+        const n = Number(a)
+        return Number.isFinite(n) ? n : a
+      })
+      const obj = api[group]
+      if (obj && typeof obj === 'object') {
+        const fn = (obj as Record<string, unknown>)[method]
+        if (typeof fn === 'function') {
+          console.log('[debug] routing: %s.%s(%s)', group, method, args.map(a => JSON.stringify(a)).join(', '))
+          setTimeout(() => (fn as (...a: unknown[]) => void)(...args), 100)
+        } else {
+          console.warn('[debug] unknown method: %s.%s', group, method)
+        }
+      } else {
+        console.warn('[debug] unknown group: %s', group)
+      }
+    }
+  }
 }
 
 export type DebugAPI = ReturnType<typeof setupDebugAPI>
