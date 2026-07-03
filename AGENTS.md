@@ -2,7 +2,7 @@
 
 ## 仕様と実装の乖離 (2026-07-03 判明)
 
-全214 unit test + 30 E2E test が通るのに UX 仕様 (`docs/straydog-ux.md`) と実装が大きく異なる理由:
+全226 unit test + 40 E2E test が通るのに UX 仕様 (`docs/straydog-ux.md`) と実装が大きく異なる理由:
 
 ### テストは「仕様」ではなく「実装」を検証している
 
@@ -64,7 +64,7 @@ src/
     └── data.test.ts           # INTRO_LINES / STORY_SCENES データ検証
 ```
 
-全24ファイル、214 unit test + 27 E2E test、全て PASS。
+全25ファイル、226 unit test + 40 E2E test、全て PASS。
 
 ### テスト対象外のソース
 
@@ -76,8 +76,8 @@ src/
 
 ### テスト方針
 
-- **vitest + jsdom**: DOM操作のunitテスト (214 tests)
-- **Playwright + chromium**: E2Eブラウザテスト (27 tests, `localhost:5000` 自動起動)
+- **vitest + jsdom**: DOM操作のunitテスト (226 tests)
+- **Playwright + chromium**: E2Eブラウザテスト (40 tests, `localhost:5000` 自動起動)
 - **canvas依存**: `createCanvas` は mock 2d context で代用 (`canvas` package 未インストール)
 - **Leaflet依存**: `map.test.ts` は `getDistance` の純粋計算のみ。地図描画は `render.test.ts` で mock。
 - **音声**: `AudioContext` mock (setup.ts)。`ensureResumed` のみテスト済み。
@@ -187,9 +187,9 @@ URL: `/#debug/spell/decode/あいうえ` または `/#debug/spell/list`
 ```
 npm run dev      # 開発サーバ localhost:5000
 npm run build    # dist/ に出力
-npm run test     # vitest run (214 unit tests)
-npm run test:e2e # playwright test (30 E2E tests on localhost:5000)
-npm run test:all # vitest && playwright (244 tests total)
+npm run test     # vitest run (226 unit tests)
+npm run test:e2e # playwright test (40 E2E tests on localhost:5000)
+npm run test:all # vitest && playwright (266 tests total)
 npm run deploy   # build + surge dist/ straydog.surge.sh
 ```
 
@@ -205,3 +205,21 @@ npm run deploy   # build + surge dist/ straydog.surge.sh
 4. **オフライン**: SW 登録のみ。キャッシュ戦略未実装
 5. **アクセシビリティ**: aria-label, focus outline, prefers-reduced-motion 未対応
 6. **レスポンシブ**: clamp() 未使用。固定値 + vw 混在
+
+---
+
+## Chrome拡張
+
+`chrome-ext/` に DevTools 拡張あり。
+
+### インストール
+1. `chrome://extensions` → デベロッパーモードON
+2. 「パッケージ化されていない拡張機能を読み込む」
+3. `chrome-ext/` を選択
+
+### 通信方式
+```
+popup.js → chrome.scripting.executeScript()
+  → content.js → window.postMessage()
+    → page (window.__debug)
+```

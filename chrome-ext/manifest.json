@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Stray Dog DevTools",
+  "version": "1.0",
+  "description": "Stray Dog デバッグAPIをブラウザから操作",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://localhost:*/*", "https://straydog.surge.sh/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [{
+    "matches": ["http://localhost:*/*", "https://straydog.surge.sh/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}
