@@ -84,10 +84,11 @@ export function startMap(arrivedIds: string[], visibleIds?: string[]): void {
       : `<span style="font-size:1.5rem">${s.icon}</span>`
     let { lat, lng } = s
     const key = `${lat.toFixed(5)},${lng.toFixed(5)}`
-    if (usedCoords.has(key)) { lat += 0.0002 * usedCoords.size; lng += 0.0002 * usedCoords.size }
+    if (usedCoords.has(key)) { lat += 0.0005 * usedCoords.size; lng += 0.0005 * usedCoords.size }
     usedCoords.add(key)
     const marker = L.marker([lat, lng], {
       icon: L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] }),
+      zIndexOffset: 2000,
     }).addTo(map!)
     marker.bindPopup(() => {
       const pos = lastUserPos ?? MOCK_POS
@@ -116,7 +117,7 @@ export function startMap(arrivedIds: string[], visibleIds?: string[]): void {
   const unvisited = accessible.filter(s => !arrivedSpots.has(s.id))
   if (unvisited.length > 0) {
     const start = unvisited[Math.floor(Math.random() * unvisited.length)]
-    dogMarker = L.marker([start.lat, start.lng], { icon: DOG_ICON, zIndexOffset: 1000 }).addTo(map)
+    dogMarker = L.marker([start.lat, start.lng], { icon: DOG_ICON, zIndexOffset: 100 }).addTo(map)
     dogMarker.bindPopup('🐕 犬がここにいるかも…')
     startDogWander(unvisited)
   }

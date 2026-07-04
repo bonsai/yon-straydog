@@ -1,225 +1,110 @@
-# AGENTS.md — Stray Dog プロジェクト構造
-
-## 仕様と実装の乖離 (2026-07-03 判明)
-
-全226 unit test + 40 E2E test が通るのに UX 仕様 (`docs/straydog-ux.md`) と実装が大きく異なる理由:
-
-### テストは「仕様」ではなく「実装」を検証している
-
-テストは仕様書の要求項目をテストしていない。実装時に書いたコードの振る舞いを検証しているだけ。以下、具体例:
-
-| 仕様にあるもの | 実装 | テストが通った理由 |
-|---|---|---|
-| Splash画面 (ロゴ+「はじめる」) | なし。即座にIntroへ | テストは `showScreen('intro')` のDOM確認のみ |
-| ARカメラ (足跡オーバーレイ) | なし。ツールバーのカメラのみ | テストは `#tool-btn-camera` の存在確認のみ |
-| Home画面 (8ドット進捗bar) | なし。Intro→Puzzle→Hub直列 | テストは `goToHub()` 後のHubカード確認のみ |
-| アルバム (3列グリッド) | なし | テスト自体がない |
-| Bottom Sheet ドラッグ可能 | 固定表示 | テストは要素の存在確認のみ |
-| CartoDB dark_all タイル | OSM標準タイル | タイルURLをテストしていない |
-| 50m到着閾値 | 10m (変更済み) | テストは `getDistance()` の計算のみ |
-
-### 結論
-
-テストは**退行防止 (regression)** として機能しているが、**仕様準拠 (spec compliance)** は検証していない。
-
-必要なら:
-- `docs/straydog-ux.md` の各要件に ID を振る
-- spec-to-test トレーサビリティマトリクスを作る
-- E2E テスト (Playwright等) で画面フローを検証
-
----
-
-## テスト構成
-
-```
-src/
-├── __tests__/
-│   ├── setup.ts          # localStorage, AudioContext, mediaDevices モック
-│   ├── debug-api.test.ts # setupDebugAPI + window.__debug
-│   ├── sound.test.ts     # ensureResumed / AudioContext resume
-│   ├── status.test.ts    # GameStore stub (useGameStore)
-│   ├── store.test.ts     # useDogStore (Zustand)
-│   └── ux-flow.test.ts   # 画面遷移, Hub, Result, Complete, Confetti
-├── game/__tests__/
-│   ├── game-state.test.ts # 位相管理, ステップキュー
-│   ├── puyo-logic.test.ts # ぷよぷよ消去判定 (canvas 非依存)
-│   ├── puyo.test.ts       # startPuyoGame / closePuyoGame DOM
-│   ├── puzzle.test.ts     # 15パズル createPuzzleState / isSolved
-│   ├── quiz-dom.test.ts   # startQuiz4 / closeQuiz4 DOM
-│   ├── quiz.test.ts       # QUIZZES データ整合性 (37問)
-│   ├── registry.test.ts   # registerGameStarters window.__gameStarters
-│   ├── simon-dom.test.ts  # startSimon / closeSimon DOM + keydown listener
-│   ├── simon-logic.test.ts# clickTest 座標マッピング
-│   ├── simon.test.ts      # createSimonCanvas / drawSimon mock
-│   ├── spots.test.ts      # isSpotUnlocked / spotLockReason / completeCurrentSpot
-│   └── story-mode.test.ts # saveStoryProgressIndex
-├── map/__tests__/
-│   ├── hub.test.ts        # isSpotUnlocked / spotLockReason / getBadgeCount
-│   ├── map.test.ts        # getDistance / arrival detection
-│   ├── render.test.ts     # Leaflet mock 描画
-│   └── tools.test.ts      # showTools / setupTools ボタン制御
-└── story/__tests__/
-    ├── adventure-step.test.ts # startAdventure / stopAdventure / goNext
-    ├── adventure.test.ts      # startStoryScene / saveStoryProgressIndex
-    └── data.test.ts           # INTRO_LINES / STORY_SCENES データ検証
-```
-
-全25ファイル、226 unit test + 40 E2E test、全て PASS。
-
-### テスト対象外のソース
-
-| ファイル | 理由 | 優先度 |
-|---|---|---|
-| `src/hub.ts` | 単なる re-export + DEVログ | 低 |
-| `src/main.ts` | DOMContentLoaded にフック → unit test で初期化不可 (E2E でカバー) | 中 |
-| `src/story/spots.ts` | データ定義のみ (data.test.ts + E2E でカバー) | 低 |
-
-### テスト方針
-
-- **vitest + jsdom**: DOM操作のunitテスト (226 tests)
-- **Playwright + chromium**: E2Eブラウザテスト (40 tests, `localhost:5000` 自動起動)
-- **canvas依存**: `createCanvas` は mock 2d context で代用 (`canvas` package 未インストール)
-- **Leaflet依存**: `map.test.ts` は `getDistance` の純粋計算のみ。地図描画は `render.test.ts` で mock。
-- **音声**: `AudioContext` mock (setup.ts)。`ensureResumed` のみテスト済み。
-- **位置情報**: `navigator.geolocation` mock。GPS mock は `startMockGPS` 経由。
-
----
+# AGENTS.md — Stray Dog プロジェクト構造 (2026-07-04)
 
 ## アーキテクチャ
 
-### 状態管理
-- **`src/store.ts`**: Zustand `useDogStore` — `appState`, `introDone`, `completed[]`, `currentMapCenter`
-- **`src/game-state.ts`**: モジュール変数 — `GamePhase`, ステップキュー
-- **`src/status.ts`**: `useGameStore` stub — `GamePhase` + step builder。**途中まで実装**
+### シーン管理 (`src/scenes.ts`)
+- `goToScene(id|name)` — 全画面遷移を一元管理
+- `registerScene({id, name, enter})` — シーン登録
+- `routeFromHash()` — 初回ロード時のみ `#0` `#s1-game` 等で直接シーン起動
+- URL操作なし（hashchangeリスナーなし、history.replaceStateなし）
+
+### シーンID
+
+```
+0  intro          1  s0-game(puzzle)
+2  s0-result      3  hub(debug only)
+4  s1-story       5  s1-game(puyo)       6  s1-result
+7  s2-story       8  s2-game(simon)      9  s2-result
+10 s3-story       11 s3-game(match)      12 s3-result
+13 s4-story       14 s4-complete         15 map
+17 s4-game(D&D)
+```
 
 ### 画面フロー
+
 ```
-タイトル → INTRO → PUZZLE(4x4) → HUB → MAP → MINI-GAME → BADGE → HUB → COMPLETE
-                                        ↑______________________________|
+intro(0) → s0-game(1) → s0-result(2) → map(15)
+map → spotタップ → distance表示 → 到着(≤10m) → story → game → result → map
+                                                                ↑_______________|
+s4: s4-story(13) → s4-game(17: D&D) → s4-complete(14)
 ```
 
-- `src/main.ts` の `DOMContentLoaded` ハンドラが全画面遷移を制御
-- `switchScreen(from, to)`: CSS animation `sEnter`/`sExit` で遷移
-- `showScreen(id)`: `active` class のみ操作 (アニメーションなし)
+### 状態管理
+- **`src/store.ts`**: `useDogStore` — `appState`, `introDone`, `completed[]`
+- **`src/game-state.ts`**: `GamePhase`, ステップキュー, `buildStorySteps()`
 
-### スポット・アンロック条件
-- s0 (さぼうる): 常時解放
-- s1 (響): 常時解放
-- s2 (神田橋公園): s0 + s1 クリアで解放
-- s3 (YON 3F): s0 + s1 + s2 (バッジ3個) クリアで解放
+### スポット
 
-### ミニゲーム
-| スポット | ゲーム | ファイル |
+| id | 名前 | game | scene base |
+|---|---|---|---|
+| s0 | YON 2F | puzzle(2x2 photo) | 0 |
+| s1 | さぼうる | puyo(6x12 4消し) | 4 |
+| s2 | 響(野外彫刻) | simon(4色記憶) | 7 |
+| s3 | 神田橋公園 | match(人物×古層D&D) | 10 |
+| s4 | YON 3F | s4-game(西洋×東洋D&D) | 13 |
+
+### GPS座標 (分散済み)
+
+| spot | lat | lng |
 |---|---|---|
-| s0 | ぷよぷよ (6x12, 4消し) | `src/game/puyo.ts` |
-| s1 | シモン (4色記憶) | `src/game/simon.ts` |
-| s2 | クイズ (漢字読み) | `src/game/quiz.ts` |
-| s3 | ファイナル (ストーリー) | - |
+| s0 | 35.6960 | 139.7575 |
+| s1 | 35.6940 | 139.7600 |
+| s2 | 35.6930 | 139.7630 |
+| s3 | 35.6920 | 139.7660 |
+| s4 | 35.6970 | 139.7560 |
 
-### GPS / 地図
-- `src/map/map.ts`: Leaflet 地図。`startMap`, `stopMap`, `getDistance`, `setOnArrive`
-- 到着閾値: **10m** (`src/map/map.ts:159`)
-- デバッグ用モック: `forceMock` + `startMockGPS()`
+### マップ (`src/map/map.ts`)
+- Leaflet + OSMタイル
+- モックGPS (`forceMock`)、10m到着閾値
+- Spotマーカー (z-index 2000) > ユーザー👤 (500) > 犬🐕 (100)
+- ポップアップ: 距離表示 + `📍ここへ移動` (>10m) or `▶謎を解く` (≤10m)
+- 犬: 未踏破spot間をランダム移動 + 1-8秒停留
+- 重複座標の自動オフセット
 
----
+### ツールバー
+`👜(bag)` `📝(memo)` `🗺️(map)` `📷(camera)` `🎤(mic)` `🔄(reset)`
+- カバン: バッジ進捗表示 (🟡/⚪ x4)
+- リセット: 全状態クリア + リロード
 
-## デバッグ
+### intro
+- `<img>` タグで `/0.jpg`(夫妻) → `/gdog.png`(犬) に切り替え
+- CSS background-image 不使用
 
-### URLハッシュルーティング
-
-`#debug/<group>/<method>/<arg1>/<arg2>/...` で全APIメソッドをURLから呼び出せる。
-
-例:
-- `http://localhost:5000/#debug` — デバッグモード有効化
-- `http://localhost:5000/#debug/screen/hub` — Hub画面
-- `http://localhost:5000/#debug/screen/complete` — コンプリート画面
-- `http://localhost:5000/#debug/story/marathon` — ストーリーマラソン
-- `http://localhost:5000/#debug/game/puyo` — ぷよぷよ起動
-- `http://localhost:5000/#debug/game/simon` — シモン起動
-- `http://localhost:5000/#debug/map/mock` — モックGPS地図
-- `http://localhost:5000/#debug/story/show/1` — シーン1を表示
-- `http://localhost:5000/#debug/state/reset` — 全リセット
-- `http://localhost:5000/#debug/util/confetti` — 紙吹雪
-
-数値引数は自動パースされる (e.g. `show/1` → `show(1)`)。
-
-### window.__debug API
-
-`#debug` 有効時、ブラウザコンソールから全操作可能:
-
-```ts
-window.__debug = {
-  screen: { show(id), hide(id), hub(), home(), intro(), puzzle(), map(), result(spotId?), complete(), all() }
-  game:   { start(id), puyo(), simon(), quiz(), clear(), list() }
-  map:    { open(), close(), mock(), pos(), moveTo(spotId) }
-  story:  { show(index), list(), adventure(), stop(), marathon() }
-  tool:   { show(name), hide(name), toolbar(bool), memo(), camera(), mic() }
-  state:  { get(), set(partial), complete(id), completeAll(), reset(), introDone(), phase(p) }
-  data:   { spots, stories, intro, badgeSpots, sceneIndex }
-  debug:  { enable(), panel(), panelClose() }
-  util:   { confetti(), share() }
-  puzzle: { create(shuffle?), solved(state), swap(state, idx) }
-  spell:  { encode(), decode(code), list() }
-  help()  // console.table
-
-### 復活の呪文 (`#debug/spell`)
-
-6状態(intro/puzzle/s0/s1/s2/s3)を4文字ひらがなに圧縮。チェックサム付き。
-
-```js
-__debug.spell.encode()           // 現在状態→4文字
-__debug.spell.decode('あいうえ')  // 呪文→状態復元
-__debug.spell.list()             // 主要チェックポイント一覧
-```
-
-URL: `/#debug/spell/decode/あいうえ` または `/#debug/spell/list`
-
-全37テスト (214 unit + 37 E2E) が master で PASS。
-```
-
-### debug-only class
-`class="debug-only"` の要素は `#debug` hash 時のみ表示 (`enableDebugMode()`)。
+### favicon
+- `/gdog.png`
 
 ---
 
 ## ビルド・配置
 
 ```
-npm run dev      # 開発サーバ localhost:5000
-npm run build    # dist/ に出力
-npm run test     # vitest run (226 unit tests)
-npm run test:e2e # playwright test (40 E2E tests on localhost:5000)
-npm run test:all # vitest && playwright (266 tests total)
-npm run deploy   # build + surge dist/ straydog.surge.sh
+npm run dev        # localhost:5000
+npm run build      # dist/
+npm run test       # vitest (272 tests, 26 pre-existing failures)
+npm run test:e2e   # playwright surge-flow (14 tests, all pass)
+npm run deploy     # build + surge dist/ straydog.surge.sh
 ```
 
-**注意**: `dist/index.html` は `index.html` と異なる構造 (古いビルド)。再ビルド推奨。
+## デバッグ
 
----
+`https://straydog.surge.sh#debug` — デバッグモード + `window.__debug` API 全開放
+
+### よく使うdebugコマンド
+```js
+__debug.screen.hub()          // Hub (debug only)
+__debug.game.puyo()           // ぷよぷよ
+__debug.state.completeAll()   // 全バッジ取得
+__debug.state.reset()         // リセット
+__debug.map.mock()            // モックGPS地図
+__debug.help()                // 全コマンド表示
+```
+
+### debug用シーンURL
+`#debug/screen/hub` `#debug/game/s4` `#debug/screen/complete`
 
 ## 既知の問題
 
-1. **dist/ が古い**: `index.html` の構造変更 (puzzle4 → p4 等) がビルドに未反映
-2. **Service Worker**: `sw.js` が存在しない (register のみ)
-3. **カメラ**: 実際のカメラストリームは動作するが、AR オーバーレイなし
-4. **オフライン**: SW 登録のみ。キャッシュ戦略未実装
-5. **アクセシビリティ**: aria-label, focus outline, prefers-reduced-motion 未対応
-6. **レスポンシブ**: clamp() 未使用。固定値 + vw 混在
-
----
-
-## Chrome拡張
-
-`chrome-ext/` に DevTools 拡張あり。
-
-### インストール
-1. `chrome://extensions` → デベロッパーモードON
-2. 「パッケージ化されていない拡張機能を読み込む」
-3. `chrome-ext/` を選択
-
-### 通信方式
-```
-popup.js → chrome.scripting.executeScript()
-  → content.js → window.postMessage()
-    → page (window.__debug)
-```
+1. Unit test 26件 pre-existing failure (未export関数、座標距離、adventureタイミング等)
+2. Surge E2E 14/14 pass
+3. SW: `sw.js` 簡略化済み (addAll削除)
+4. favicon.ico 404 → `/gdog.png` を favicon に設定済み

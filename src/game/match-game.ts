@@ -28,7 +28,6 @@ export function startMatchGame(config: MatchConfig): void {
   const container = document.getElementById('puyo-game')
   if (!container) return
 
-  // Pick random series
   const series = config.series[Math.floor(Math.random() * config.series.length)]
   const items = series.items
   let round = 0
@@ -36,26 +35,17 @@ export function startMatchGame(config: MatchConfig): void {
 
   const style = document.createElement('style')
   style.textContent = `
-    .match-era-btn{padding:10px 12px;background:#1a1a2e;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
-    .match-era-btn:active{background:#2a2a3e;border-color:#ffd700}
-    .match-era-btn .yr-tag{display:inline-block;padding:1px 8px;border-radius:8px;font-size:.65rem;font-weight:600;color:#000;white-space:nowrap}
-    .match-era-btn.correct{background:#0a1a0a!important;border-color:#4caf50!important}
-    .match-era-btn.wrong{background:#1a0a0a!important;border-color:#c62828!important}
-    .match-layer-card{background:#111;border:1px solid #222;border-radius:6px;padding:4px 8px;text-align:left;font-size:.65rem;color:#777;margin-top:2px}
-    .match-layer-card span{color:#aaa}
+    .m-left{flex:1;display:flex;flex-direction:column;gap:8px}
+    .m-right{flex:1;display:flex;flex-direction:column;gap:8px}
+    .m-fixed{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:12px;text-align:center;color:#888;font-size:.75rem;min-height:44px;display:flex;align-items:center;justify-content:center}
+    .m-drag{background:#2a2a1e;border:2px dashed #555;border-radius:12px;padding:12px;text-align:center;color:#ffd700;font-size:.8rem;cursor:grab;user-select:none;min-height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+    .m-drag:active{cursor:grabbing;transform:scale(1.05)}
+    .m-drag.dragging{opacity:.4}
+    .m-fixed.correct{background:#0a2a0a!important;border-color:#4caf50!important;color:#4caf50}
+    .m-fixed.wrong{background:#1a0a0a!important;border-color:#c62828!important;color:#c62828}
+    .m-drag.matched{background:#0a2a0a;border-color:#4caf50;color:#4caf50;cursor:default;pointer-events:none}
   `
   document.head.appendChild(style)
-
-  function buildEraChoices(correctEra: string): string[] {
-    const correct = LAYER_ART.find(l => l.era === correctEra)!
-    const others = LAYER_ART.filter(l => l.era !== correctEra)
-    const arr = [correct, ...others]
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]]
-    }
-    return arr.map(l => l.era)
-  }
 
   function render(): void {
     if (round >= items.length) {
@@ -77,61 +67,72 @@ export function startMatchGame(config: MatchConfig): void {
     }
 
     const item = items[round]
-    const eras = buildEraChoices(item.era)
+    const eraSet = [...new Set(items.map(i => i.era))]
+    const shuffledFigures = [...items].sort(() => Math.random() - 0.5)
 
     container.innerHTML = `
-      <div style="padding:16px;max-width:380px;margin:0 auto">
+      <div style="padding:16px;max-width:440px;margin:0 auto">
         <div style="text-align:center;margin-bottom:8px">
           <span style="color:#ffd700;font-size:.8rem;font-weight:bold">${series.label}</span>
           <span style="color:#666;font-size:.7rem;margin-left:8px">${round + 1}/${items.length}</span>
         </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:12px">
-          ${LAYER_ART.map(l => `
-            <div style="background:#111;border-radius:8px;padding:6px 4px;text-align:center;border:1px solid ${eraFor(l.era, eras) === 0 ? '#ffd700' : '#222'}">
-              <div style="font-size:.6rem;color:#888">${l.title}</div>
-              <div style="font-size:.7rem;color:#aaa">${l.art}</div>
-              <div style="font-size:.55rem;color:#666">${l.artist}</div>
-              <div style="font-size:.55rem;color:#888;margin-top:2px">${l.era.split('（')[0]}</div>
-            </div>
-          `).join('')}
-        </div>
-
-        <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px">
+        <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:12px;text-align:center;margin-bottom:12px">
           <div style="font-size:1.2rem;color:#e0e0e0;margin-bottom:2px">${item.figure}</div>
           <div style="font-size:.75rem;color:#888">${item.hint}</div>
         </div>
-        <div style="font-size:.8rem;color:#888;text-align:center;margin-bottom:8px">どの古層の人物？</div>
-        <div id="match-choices" style="display:flex;flex-direction:column;gap:6px"></div>
-        <p id="match-fb" style="text-align:center;min-height:1.5em;margin-top:8px"></p>
+        <div style="font-size:.7rem;color:#888;text-align:center;margin-bottom:8px">人物を 対応する古層にドラッグしてね</div>
+        <div id="m-body" style="display:flex;gap:10px">
+          <div class="m-left">
+            ${LAYER_ART.map(l => `
+              <div class="m-fixed" data-era="${l.era}">
+                <div style="font-size:.7rem;color:#aaa;font-weight:bold">${l.title}</div>
+                <div style="font-size:.6rem;color:#888">${l.art} / ${l.artist}</div>
+                <div style="font-size:.55rem;color:#666;margin-top:2px">${l.era.split('（')[0]}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="m-right">
+            ${shuffledFigures.map(f => `<div class="m-drag" draggable="true" data-era="${f.era}">${f.figure}</div>`).join('')}
+          </div>
+        </div>
+        <p id="m-fb" style="text-align:center;min-height:1.5em;margin-top:8px"></p>
       </div>
     `
 
-    const choicesEl = document.getElementById('match-choices')!
-    const fbEl = document.getElementById('match-fb')!
     let answered = false
+    const fbEl = document.getElementById('m-fb')!
 
-    eras.forEach(era => {
-      const layer = LAYER_ART.find(l => l.era === era)!
-      const btn = document.createElement('button')
-      btn.className = 'match-era-btn'
-      btn.innerHTML = `<span class="yr-tag" style="background:${tagColor(layer.title)}">${layer.title}</span> ${layer.era}`
-      btn.addEventListener('click', () => {
+    document.querySelectorAll('.m-drag').forEach(d => {
+      const el = d as HTMLElement
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer!.setData('text/plain', el.dataset.era!)
+        el.classList.add('dragging')
+      })
+      el.addEventListener('dragend', () => el.classList.remove('dragging'))
+    })
+
+    document.querySelectorAll('.m-fixed').forEach(f => {
+      f.addEventListener('dragover', e => e.preventDefault())
+      f.addEventListener('drop', (e) => {
+        e.preventDefault()
         if (answered) return
         answered = true
+        const fixed = e.currentTarget as HTMLElement
+        const dragEra = e.dataTransfer!.getData('text/plain')
+        const fixedEra = fixed.dataset.era!
 
-        const isCorrect = era === item.era || (item.altEras && item.altEras.includes(era))
+        const isCorrect = dragEra === item.era || (item.altEras?.includes(dragEra) ?? false)
 
         if (isCorrect) {
-          btn.classList.add('correct')
+          fixed.classList.add('correct')
           fbEl.innerHTML = '<span style="color:#4caf50">✅ 正解！</span>'
           playCorrect()
           setTimeout(() => { round++; render() }, 800)
         } else {
-          btn.classList.add('wrong')
-          choicesEl.querySelectorAll('.match-era-btn').forEach(b => {
-            const e = (b as HTMLElement).querySelector('.yr-tag')?.nextSibling?.textContent?.trim() || ''
-            if (e === item.era || (item.altEras && item.altEras.includes(e))) b.classList.add('correct')
+          fixed.classList.add('wrong')
+          document.querySelectorAll('.m-fixed').forEach(ff => {
+            const fe = (ff as HTMLElement).dataset.era
+            if (fe === item.era || item.altEras?.includes(fe!)) ff.classList.add('correct')
           })
           fbEl.innerHTML = '<span style="color:#c62828">❌ はずれ</span>'
           mistakes++
@@ -139,7 +140,6 @@ export function startMatchGame(config: MatchConfig): void {
           setTimeout(() => { round++; render() }, 1200)
         }
       })
-      choicesEl.appendChild(btn)
     })
   }
 
@@ -155,18 +155,4 @@ export function startMatchGame(config: MatchConfig): void {
   })
 
   render()
-}
-
-function eraFor(era: string, eras: string[]): number {
-  return eras.indexOf(era)
-}
-
-function tagColor(title: string): string {
-  const map: Record<string, string> = {
-    '時の微笑み': '#4fc3f7',
-    '星の乳を注ぐ者': '#69db7c',
-    '思考する巨人': '#ffa200',
-    '銀河の接吻': '#e53935',
-  }
-  return map[title] || '#ffd700'
 }

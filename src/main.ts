@@ -3,7 +3,7 @@ import coupleImage from '/0.jpg'
 import dogImage from '/gdog.png'
 import { useDogStore } from './store'
 import { STORY_SCENES, INTRO_LINES } from './story/spots'
-import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools, isSpotUnlocked } from './map/hub'
+import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './map/hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game-state'
 import { startAdventure, setupStoryButtons, startStoryScene } from './story/adventure'
 import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from './story/spots'
@@ -191,7 +191,10 @@ function spotSceneId(spotId: string, suffix: 'story' | 'game' | 'result'): numbe
   }
   const base = SPOT_SCENE_BASE[spotId]
   if (base == null) return 3 // hub (debug)
-  if (spotId === 's4') return suffix === 'story' ? base : base + 1
+  if (spotId === 's4') {
+    if (suffix === 'game') return 17
+    return suffix === 'story' ? base : base + 1
+  }
   return suffix === 'story' ? base : suffix === 'game' ? base + 1 : base + 2
 }
 
@@ -243,13 +246,7 @@ export function showResultScreen(icon: string, title: string, badge: string, sub
   const btn = getId<HTMLButtonElement>('r-btn')
   btn.onclick = () => {
     r.style.display = 'none'
-    const completed = useDogStore.getState().completed
-    const next = SPOTS.find(s => s.game !== 'final' && !completed.includes(s.id) && isSpotUnlocked(s.id, completed))
-    if (next) {
-      goToScene(spotSceneId(next.id, 'story'))
-    } else {
-      goToScene(15)
-    }
+    goToScene(15)
   }
 }
 
@@ -289,6 +286,11 @@ for (const spot of SPOTS) {
   if (spot.id === 's4') {
     registerScene({ id: 13, name: 's4-story', enter: () => showClearedStory('s4') })
     registerScene({ id: 14, name: 's4-complete', enter: showCompleteScreen })
+    registerScene({ id: 17, name: 's4-game', enter: () => {
+      setCurrentGameSpot('s4'); showTools(false); setPhase('play')
+      const starter = (window as any).__gameStarters?.s4
+      if (starter) starter()
+    }})
   } else {
     const base = SPOT_SCENE_BASE[spot.id]
     registerScene({ id: base, name: `${spot.id}-story`, enter: () => showClearedStory(spot.id) })

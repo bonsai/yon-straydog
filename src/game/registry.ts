@@ -6,6 +6,7 @@ import { startTextQuiz } from './text-quiz'
 import { startSortGame } from './sort-game'
 import { startMatchGame } from './match-game'
 import { startCandyGame } from './candy-crush'
+import { startS4Game } from './s4-game'
 
 export function registerGameStarters(target: Record<string, () => void>): void {
   Object.assign(target, {
@@ -56,5 +57,6 @@ export function registerGameStarters(target: Record<string, () => void>): void {
         },
       ],
     }),
+    s4: () => startS4Game(),
   })
 }
