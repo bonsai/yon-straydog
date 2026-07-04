@@ -229,4 +229,6 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 .s4-drag.dragging{opacity:.4}
 .s4-drag.matched{background:#0a2a0a;border-color:#4caf50;color:#4caf50;cursor:default;pointer-events:none}
 .s4-fixed.matched{background:#0a2a0a;border-color:#4caf50;color:#4caf50}
+.s4-fixed.wrong{background:#2a0a0a;border-color:#c62828;color:#ff5555;animation:shake .2s ease-in-out}
+.s4-drag.selected{border-color:#ffd700;background:#3a3a1e;box-shadow:0 0 12px rgba(255,215,0,.3)}
 #s4-status{text-align:center;color:#888;font-size:.7rem;min-height:1.2em}

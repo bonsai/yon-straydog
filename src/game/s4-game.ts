@@ -3,7 +3,7 @@ import { completeCurrentSpot } from '../map/hub'
 interface S4Config {
   left: { id: string; label: string }[]
   right: { id: string; label: string }[]
-  pairs: Record<string, string>  // left-id → right-id
+  pairs: Record<string, string>
 }
 
 const DEFAULT_CONFIG: S4Config = {
@@ -22,6 +22,7 @@ const DEFAULT_CONFIG: S4Config = {
 
 let currentConfig = DEFAULT_CONFIG
 let matchedCount = 0
+let selectedDragId: string | null = null
 
 export function startS4Game(config?: S4Config): void {
   currentConfig = config ?? DEFAULT_CONFIG
@@ -29,82 +30,87 @@ export function startS4Game(config?: S4Config): void {
   if (!el) return
   el.style.display = 'flex'
   matchedCount = 0
+  selectedDragId = null
 
-  // Render left
-  const left = document.getElementById('s4-left')!
-  left.innerHTML = currentConfig.left.map(l =>
-    `<div class="s4-fixed" data-id="${l.id}">${l.label}</div>`
-  ).join('')
-
-  // Render right
-  const right = document.getElementById('s4-right')!
-  right.innerHTML = currentConfig.right.map(r =>
-    `<div class="s4-drag" draggable="true" data-id="${r.id}">${r.label}</div>`
-  ).join('')
-
-  document.getElementById('s4-status')!.textContent = ''
-
-  document.querySelectorAll('.s4-drag').forEach(d => {
-    const el = d as HTMLElement
-    el.classList.remove('matched')
-    el.draggable = true
-    el.addEventListener('dragstart', onDragStart)
-    el.addEventListener('dragend', onDragEnd)
-  })
-
-  document.querySelectorAll('.s4-fixed').forEach(f => {
-    f.classList.remove('matched')
-    f.addEventListener('dragover', onDragOver)
-    f.addEventListener('drop', onDrop)
-  })
+  renderS4()
 
   document.getElementById('s4-close')?.addEventListener('click', closeS4Game, { once: true })
 }
 
-function onDragStart(e: DragEvent): void {
-  const el = e.target as HTMLElement
-  e.dataTransfer!.setData('text/plain', el.dataset.id!)
-  el.classList.add('dragging')
+function renderS4(): void {
+  const left = document.getElementById('s4-left')!
+  const right = document.getElementById('s4-right')!
+  const status = document.getElementById('s4-status')!
+
+  // render left (fixed slots)
+  left.innerHTML = currentConfig.left.map(l => {
+    const isMatched = document.querySelector(`.s4-fixed[data-id="${l.id}"].matched`) !== null || matchedCount > 0 && currentConfig.pairs[l.id] && document.querySelector(`.s4-drag[data-id="${currentConfig.pairs[l.id]}"].matched`) !== null
+    const cls = isMatched ? 's4-fixed matched' : 's4-fixed'
+    return `<div class="${cls}" data-id="${l.id}">${l.label}</div>`
+  }).join('')
+
+  // render right (selectable blocks)
+  right.innerHTML = currentConfig.right.map(r => {
+    const isMatched = document.querySelector(`.s4-drag[data-id="${r.id}"].matched`) !== null
+    const isSelected = selectedDragId === r.id
+    const cls = isMatched ? 's4-drag matched' : isSelected ? 's4-drag selected' : 's4-drag'
+    return `<div class="${cls}" data-id="${r.id}">${r.label}</div>`
+  }).join('')
+
+  status.textContent = `${matchedCount}/3 マッチ`
+
+  // attach click handlers
+  document.querySelectorAll('.s4-drag:not(.matched)').forEach(d => {
+    d.addEventListener('click', onDragClick)
+  })
+  document.querySelectorAll('.s4-fixed:not(.matched)').forEach(f => {
+    f.addEventListener('click', onFixedClick)
+  })
 }
 
-function onDragEnd(e: DragEvent): void {
-  (e.target as HTMLElement).classList.remove('dragging')
+function onDragClick(e: Event): void {
+  const el = e.currentTarget as HTMLElement
+  const id = el.dataset.id!
+  if (selectedDragId === id) {
+    selectedDragId = null
+  } else {
+    selectedDragId = id
+  }
+  refreshSelection()
 }
 
-function onDragOver(e: DragEvent): void {
-  e.preventDefault()
-}
-
-function onDrop(e: DragEvent): void {
-  e.preventDefault()
+function onFixedClick(e: Event): void {
+  if (!selectedDragId) return
   const fixed = e.currentTarget as HTMLElement
-  const dragId = e.dataTransfer!.getData('text/plain')
   const fixedId = fixed.dataset.id!
 
-  if (currentConfig.pairs[fixedId] === dragId) {
-    fixed.classList.add('matched')
-    const dragEl = document.querySelector(`.s4-drag[data-id="${dragId}"]`) as HTMLElement
-    if (dragEl) {
-      dragEl.classList.add('matched')
-      dragEl.draggable = false
-    }
+  if (currentConfig.pairs[fixedId] === selectedDragId) {
+    // match
     matchedCount++
-    updateStatus()
+    selectedDragId = null
+    refreshSelection()
     if (matchedCount === Object.keys(currentConfig.pairs).length) {
+      document.getElementById('s4-status')!.textContent = '3/3 マッチ！'
       setTimeout(() => {
         closeS4Game()
         completeCurrentSpot()
       }, 800)
     }
+  } else {
+    // wrong match → blink red
+    fixed.classList.add('wrong')
+    setTimeout(() => fixed.classList.remove('wrong'), 300)
   }
 }
 
-function updateStatus(): void {
-  const el = document.getElementById('s4-status')
-  if (el) el.textContent = `${matchedCount}/3 マッチ`
+function refreshSelection(): void {
+  document.querySelectorAll('.s4-drag').forEach(d => {
+    d.classList.toggle('selected', (d as HTMLElement).dataset.id === selectedDragId)
+  })
 }
 
 function closeS4Game(): void {
   const el = document.getElementById('s4-game')
   if (el) el.style.display = 'none'
+  selectedDragId = null
 }

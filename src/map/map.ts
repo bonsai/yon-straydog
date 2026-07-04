@@ -101,11 +101,13 @@ export function startMap(arrivedIds: string[], visibleIds?: string[]): void {
     return marker
   })
 
-  // Add completed spot markers
+  // Add completed spot markers - スポットのアイコン+チェックマーク
   SPOTS.filter(s => arrivedSpots.has(s.id)).forEach(s => {
-    L.circleMarker([s.lat, s.lng], {
-      radius: 10, color: '#4caf50', fillColor: '#4caf50', fillOpacity: 0.5,
-    }).addTo(map!).bindPopup(`✅ ${s.name}`)
+    const icon = L.divIcon({
+      html: `<div style="position:relative;display:inline-block;opacity:.6;filter:grayscale(.5)"><span style="font-size:1.3rem">${s.icon}</span><span style="position:absolute;bottom:-4px;right:-6px;font-size:.9rem">✅</span></div>`,
+      className: '', iconSize: [32, 32], iconAnchor: [16, 16]
+    })
+    L.marker([s.lat, s.lng], { icon, zIndexOffset: 500 }).addTo(map!).bindPopup(`✅ ${s.name}`)
   })
 
   // User icon removed - 現在地不要
