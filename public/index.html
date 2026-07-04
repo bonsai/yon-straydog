@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Stray Dog — 迷い犬を探して</title>
+<link rel="icon" href="/gdog.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stray Dog">
@@ -17,7 +19,7 @@
 
   <!-- ===== 1. INTRO ===== -->
   <div id="intro" class="screen active">
-    <div id="intro-bg"></div>
+    <img id="intro-img" src="/0.jpg" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;background:#0a0a0f;z-index:0;opacity:0;transition:opacity 2s">
     <div id="intro-text-area"><div id="intro-text"></div></div>
     <button id="intro-skip">スキップ ▶▶</button>
     <div class="bottom-bar">
@@ -63,9 +65,7 @@
     <div id="hub-top">
       <span id="hub-icon">🐕</span>
       <span id="hub-title">Stray Dog</span>
-      <button id="hub-story-btn" class="hub-story-btn">📖</button>
-      <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
-      <div id="hub-balls">⚪⚪⚪</div>
+      <button id="hub-reset-btn" class="debug-only" style="background:none;border:1px solid #333;color:#888;padding:2px 8px;border-radius:8px;cursor:pointer;font-size:.75rem" title="STATUSをチャラにする">🔄</button>
     </div>
     <div id="hub-grid"></div>
   </div>
@@ -106,10 +106,24 @@
 
   <!-- ===== TOOLBAR (game mode) ===== -->
   <div id="toolbar">
+    <button id="tool-btn-bag" class="tool-btn" data-tool="bag">👜</button>
     <button id="tool-btn-memo" class="tool-btn" data-tool="memo">📝</button>
     <button id="tool-btn-map" class="tool-btn" data-tool="map">🗺️</button>
     <button id="tool-btn-camera" class="tool-btn" data-tool="camera">📷</button>
     <button id="tool-btn-mic" class="tool-btn" data-tool="mic">🎤</button>
+    <button id="tool-btn-reset" class="tool-btn" data-tool="reset">🔄</button>
+  </div>
+
+  <!-- ===== TOOL: BAG ===== -->
+  <div id="tool-bag" class="tool-overlay">
+    <div id="bag-head">
+      <span>👜 カバン</span>
+      <button id="bag-close">✕</button>
+    </div>
+    <div id="bag-body">
+      <div id="bag-balls"></div>
+      <div id="bag-progress"></div>
+    </div>
   </div>
 
   <!-- ===== TOOL: MEMO ===== -->
@@ -205,12 +219,8 @@
       <p id="complete-body">
         足跡をたどって辿り着くと——<br>そこには犬がいた。
       </p>
-      <div class="reward">
-        <h3>📞 夫妻に電話</h3>
-        <p>「見つかりましたよ。大丈夫です。」<br>電話の向こうで、妻の泣き声が聞こえた。</p>
-      </div>
       <div class="reward dim">
-        <h3>🎵 Goldberg 層へ</h3>
+        <h3>🎵 街の音</h3>
         <p>
           犬は見つかった。<br>
           だが——ここからが本番だ。<br>

@@ -11,9 +11,6 @@ describe('startSpotHub', () => {
         <div id="hub-top">
           <span id="hub-icon">🐕</span>
           <span id="hub-title">Stray Dog</span>
-          <button id="hub-story-btn" class="hub-story-btn">📖</button>
-          <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
-          <div id="hub-balls">⚪⚪⚪⚪</div>
         </div>
         <div id="hub-grid"></div>
       </div>
@@ -57,21 +54,5 @@ describe('startSpotHub', () => {
     const cards = document.querySelectorAll('.hub-card')
     expect(cards[0].classList.contains('done')).toBe(true)
     expect(cards[1].classList.contains('done')).toBe(false)
-  })
-
-  it('renders badge balls (4 balls)', () => {
-    startSpotHub()
-    const balls = document.getElementById('hub-balls')
-    const ballSpans = balls?.querySelectorAll('span')
-    expect(ballSpans?.length).toBe(4)
-  })
-
-  it('updates badge display when spots are completed', () => {
-    useDogStore.getState().completeSpot('s0')
-    startSpotHub()
-    const balls = document.getElementById('hub-balls')
-    const ballSpans = balls?.querySelectorAll('span')
-    expect(ballSpans?.[0]?.title).toBe('クリームソーダのバッジ')
-    expect(ballSpans?.[1]?.title).toBe('響（野外彫刻）')
   })
 })

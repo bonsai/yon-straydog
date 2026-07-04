@@ -17,9 +17,6 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 
 /* ===== INTRO ===== */
 #intro{background:#0a0a0f}
-#intro-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0}
-#intro-bg.faded{background:center/contain no-repeat;background-repeat:no-repeat;opacity:0;transition:opacity 4s ease}
-#intro-bg.visible{opacity:1}
 #intro-skip{position:absolute;bottom:max(24px,env(safe-area-inset-bottom,24px));left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,255,255,.06);border:1px solid #333;color:#555;border-radius:8px;padding:5px 12px;font-size:.7rem;cursor:pointer}
 #intro-skip:active{background:rgba(255,255,255,.12)}
 #intro-text-area{position:absolute;bottom:50%;left:20px;right:20px;z-index:2;transform:translateY(50%);padding-bottom:40px}
@@ -45,8 +42,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 #puzzle4-title{color:#ffd700;font-size:.8rem;font-weight:bold}
 #puzzle4-hint{color:#666;font-size:.65rem}
 #puzzle4-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;gap:4px;overflow:hidden}
-#puzzle4-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:2px;width:min(80vw,320px);height:min(80vw,320px);background:#1a1a2e;padding:3px;border-radius:10px;border:1px solid #333}
-.p4-tile{border-radius:4px;cursor:pointer;background-size:400% 400%;background-image:url(/gdog.png);transition:box-shadow .12s,transform .08s}
+#puzzle4-grid{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4px;width:min(85vw,480px);height:min(85vw,480px);background:#1a1a2e;padding:4px;border-radius:12px;border:1px solid #333}
+.p4-tile{border-radius:8px;cursor:pointer;background-size:200% 200%;transition:box-shadow .12s,transform .08s}
 .p4-tile:active{transform:scale(.93)}
 .p4-tile.selected{box-shadow:0 0 0 3px #ffd700,0 0 14px rgba(255,215,0,.35);z-index:2}
 .p4-tile.solved-flash{animation:tFlash .4s ease-out}
@@ -64,13 +61,12 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 #hub-top{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #222;gap:8px}
 #hub-icon{font-size:1rem}
 #hub-title{color:#ffd700;font-size:.95rem;font-weight:bold;flex:1}
-#hub-balls{display:flex;gap:4px;font-size:1.1rem}
-.hub-story-btn{background:none;border:1px solid #333;color:#888;font-size:1rem;padding:4px 8px;border-radius:8px;cursor:pointer;transition:color .15s}
-.hub-story-btn:active{color:#ffd700;border-color:#ffd700}
 #hub-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;overflow-y:auto;align-content:start}
 
 /* ===== MAP ===== */
 #map-top{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#0a0a0f;z-index:10;border-bottom:1px solid #222}
+#map-wrap{position:fixed;top:0;left:0;width:100%;height:100dvh;z-index:60;display:none;flex-direction:column}
+#map-wrap.active{display:flex}
 #map-top h2{font-size:1rem;color:#ffd700;flex:1}
 #map-top .prog{font-size:.75rem;color:#888}
 #map-top .prog span{color:#ffd700;font-weight:bold}
@@ -210,3 +206,9 @@ body{font-family:'Hiragino Sans','Noto Sans JP',system-ui,sans-serif;background:
 /* ===== DEBUG ===== */
 .debug-only{display:none}
 .hidden{display:none!important}
+
+/* ===== SPOT PULSE ===== */
+.spot-pulse{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,215,0,.2);border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
+.spot-pulse span{font-size:1.5rem;filter:drop-shadow(0 0 6px rgba(255,215,0,.8));pointer-events:none}
+.leaflet-marker-icon *{pointer-events:none}
+@keyframes pulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}100%{transform:scale(1);opacity:1}}

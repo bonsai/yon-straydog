@@ -1,6 +1,7 @@
 import { useDogStore } from '../store'
 import { SPOTS, BADGE_SPOTS } from '../story/spots'
 import { registerGameStarters as registerReg } from '../game/registry'
+import { isTestMode } from '../test-mode'
 
 const TOOLS_STORAGE_KEY = 'sd_memo'
 
@@ -11,6 +12,12 @@ function getMemo(): string {
 
 function saveMemo(text: string): void {
   localStorage.setItem(TOOLS_STORAGE_KEY, text)
+}
+
+export function appendMemo(text: string): void {
+  const current = getMemo()
+  const sep = current ? '\n' : ''
+  saveMemo(current + sep + text)
 }
 
 let memoShown = false
@@ -35,9 +42,10 @@ export function showTools(visible: boolean): void {
 function showMemo(): void {
   const overlay = document.getElementById('tool-memo')
   if (!overlay) return
-  memoShown = !memoShown
-  overlay.classList.toggle('open', memoShown)
-  if (memoShown) {
+  const wasOpen = overlay.classList.contains('open')
+  cleanupTools()
+  if (!wasOpen) {
+    overlay.classList.add('open')
     const ta = document.getElementById('memo-textarea') as HTMLTextAreaElement
     if (ta) { ta.value = getMemo(); ta.focus() }
   }
@@ -70,11 +78,45 @@ function showMic(): void {
 
 function cleanupTools(): void {
   stopCamera(); stopMic()
-  ;['tool-memo','tool-camera','tool-mic'].forEach(id => document.getElementById(id)?.classList.remove('open'))
+  ;['tool-memo','tool-camera','tool-mic','tool-bag'].forEach(id => document.getElementById(id)?.classList.remove('open'))
   memoShown = false
 }
 
+function showBag(): void {
+  const overlay = document.getElementById('tool-bag')
+  if (!overlay) return
+  const wasOpen = overlay.classList.contains('open')
+  cleanupTools()
+  if (!wasOpen) {
+    overlay.classList.add('open')
+    renderBag()
+  }
+}
+
+function renderBag(): void {
+  const ballsEl = document.getElementById('bag-balls')
+  const progressEl = document.getElementById('bag-progress')
+  if (!ballsEl || !progressEl) return
+  const { completed } = useDogStore.getState()
+  const total = 4
+  const count = completed.length
+  ballsEl.innerHTML = Array.from({ length: total }, (_, i) => {
+    const done = i < count
+    return `<span style="font-size:2rem;margin:0 6px;filter:${done?'none':'grayscale(1) opacity(.3)'}">${done?'🟡':'⚪'}</span>`
+  }).join('')
+  progressEl.textContent = `🐾 ヒント玉 ${count}/${total}`
+}
+
+export function updateBagIcon(): void {
+  const btn = document.getElementById('tool-btn-bag')
+  if (!btn) return
+  const { completed } = useDogStore.getState()
+  btn.textContent = completed.length > 0 ? '👜' : '👜'
+  btn.setAttribute('data-count', String(completed.length))
+}
+
 export function setupTools(): void {
+  document.getElementById('tool-btn-bag')?.addEventListener('click', showBag)
   document.getElementById('tool-btn-memo')?.addEventListener('click', showMemo)
   document.getElementById('tool-btn-map')?.addEventListener('click', () => {
     const hub = document.getElementById('spot-hub')
@@ -89,11 +131,20 @@ export function setupTools(): void {
   document.getElementById('tool-btn-camera')?.addEventListener('click', showCamera)
   document.getElementById('tool-btn-mic')?.addEventListener('click', showMic)
 
+  document.getElementById('tool-btn-reset')?.addEventListener('click', () => {
+    useDogStore.getState().reset()
+    location.hash = ''
+    location.reload()
+  })
+
   document.getElementById('memo-close')?.addEventListener('click', () => {
     const ta = document.getElementById('memo-textarea') as HTMLTextAreaElement
     if (ta) saveMemo(ta.value)
     document.getElementById('tool-memo')?.classList.remove('open')
     memoShown = false
+  })
+  document.getElementById('bag-close')?.addEventListener('click', () => {
+    document.getElementById('tool-bag')?.classList.remove('open')
   })
   document.getElementById('camera-close')?.addEventListener('click', () => {
     stopCamera()
@@ -121,12 +172,14 @@ export function completeCurrentSpot(): void {
     const id = currentGameSpot
     currentGameSpot = null
     onSpotCleared?.(id)
+    updateBagIcon()
   }
 }
 
 export function isSpotUnlocked(id: string, completed: string[]): boolean {
+  if (isTestMode()) return true
   if (id === 's0') return true
-  if (id === 's1') return completed.includes('s0')
+  if (id === 's1') return completed.includes('s0') || localStorage.getItem('sd_intro_done') === 'true'
   if (id === 's2') return completed.includes('s1')
   if (id === 's3') return completed.includes('s2')
   if (id === 's4') return getBadgeCount(completed) >= 4
@@ -159,17 +212,6 @@ function renderHub(): void {
       <div style="color:#666;font-size:.65rem;line-height:1.3">${done?'クリア！':locked?spotLockReason(s.id, completed):s.hint}</div>
     </div>`
   }).join('')
-
-  renderBadges()
-}
-
-function renderBadges(): void {
-  const balls = document.getElementById('hub-balls')
-  if (!balls) return
-  const { completed } = useDogStore.getState()
-  balls.innerHTML = BADGE_SPOTS.map(s =>
-    completed.includes(s.id) ? `<span title="${s.badgeName}">🟡</span>` : `<span title="${s.name}">⚪</span>`
-  ).join('')
 }
 
 export function startSpotHub(): void {
@@ -179,6 +221,7 @@ export function startSpotHub(): void {
   const p4 = document.getElementById('puzzle4')
   if (p4) p4.classList.remove('active')
   renderHub()
+  updateBagIcon()
 }
 
 export function registerGameStarters(): void {

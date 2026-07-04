@@ -17,6 +17,8 @@ export interface Step {
   nextPhase?: GamePhase
   auto?: boolean
   choiceId?: string
+  yesLabel?: string
+  noLabel?: string
 }
 
 let currentPhase: GamePhase = 'title'
@@ -85,12 +87,12 @@ export function buildHintSteps(spotName: string, hint: string, onPlay: () => voi
   ]
 }
 
-export function buildStorySteps(icon: string, title: string, paragraphs: string[], onPlay: () => void, nextPhase: GamePhase, choiceText?: string): Step[] {
+export function buildStorySteps(icon: string, title: string, paragraphs: string[], onPlay: () => void, nextPhase: GamePhase, choiceText?: string, yesLabel?: string, noLabel?: string): Step[] {
   const steps: Step[] = []
   for (const p of paragraphs) {
     if (p) steps.push({ type: 'text', text: p, auto: true })
   }
-  steps.push({ type: 'choice', text: choiceText ?? 'ゲームをするかやめるか？', choiceId: 'play_or_quit' })
+  steps.push({ type: 'choice', text: choiceText ?? 'ゲームをするかやめるか？', choiceId: 'play_or_quit', yesLabel, noLabel })
   steps.push({ type: 'action', action: onPlay, nextPhase })
   return steps
 }

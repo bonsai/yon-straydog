@@ -42,9 +42,6 @@ function setupFullDOM(): void {
       <div id="spot-hub">
         <div id="hub-top">
           <span id="hub-icon">🐕</span><span id="hub-title">Stray Dog</span>
-          <button id="hub-story-btn" class="hub-story-btn">📖</button>
-          <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
-          <div id="hub-balls">⚪⚪⚪</div>
         </div>
         <div id="hub-grid"></div>
       </div>
@@ -162,27 +159,13 @@ describe('UX flow: screen transitions', () => {
   })
 
   // === UX 2.2: Hub ===
-  it('goToHub sets phase to hub and opens hub with 4 spot cards', () => {
+  it('goToHub sets phase to hub and opens hub with 5 spot cards', () => {
     goToHub()
     expect(getPhase()).toBe('hub')
     const hub = document.getElementById('spot-hub')
     expect(hub?.classList.contains('open')).toBe(true)
     const cards = document.getElementById('hub-grid')?.children
-    expect(cards?.length).toBe(4)
-  })
-
-  it('hub shows 4 badge balls', () => {
-    goToHub()
-    const balls = document.getElementById('hub-balls')
-    expect(balls?.querySelectorAll('span').length).toBe(4)
-  })
-
-  it('hub progress updates after completing s0', () => {
-    useDogStore.getState().completeSpot('s0')
-    goToHub()
-    const balls = document.getElementById('hub-balls')!
-    const spans = balls.querySelectorAll('span')
-    expect(spans[0].title).toBe('クリームソーダのバッジ')
+    expect(cards?.length).toBe(5)
   })
 
   it('s3 unlocks after 3 badges', () => {
@@ -241,7 +224,7 @@ describe('UX flow: screen transitions', () => {
 
   // === UX: Debug mode ===
   it('enableDebugMode reveals debug-only elements', () => {
-    const debugEl = document.getElementById('hub-debug-btn')
+    const debugEl = document.querySelector('.prog.debug-only') as HTMLElement | null
     expect(debugEl?.classList.contains('debug-only')).toBe(true)
     enableDebugMode()
     expect(debugEl?.classList.contains('debug-only')).toBe(false)

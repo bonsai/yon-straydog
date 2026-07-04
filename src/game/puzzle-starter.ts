@@ -14,10 +14,6 @@ export function PuzzleStarter(): void {
   const goBtn = document.getElementById('p4-go') as HTMLButtonElement
   if (!gameEl || !grid || !status || !solvedHint || !goBtn) return
 
-  const style = document.createElement('style')
-  style.textContent = `.p4-tile{background-image:url(${bgImage});background-size:200% 200%}`
-  document.head.appendChild(style)
-
   gameEl.style.display = 'flex'
   solvedHint.style.display = 'none'
   goBtn.classList.remove('show')
@@ -30,6 +26,7 @@ export function PuzzleStarter(): void {
       const col = t.currentPos % SIZE
       const div = document.createElement('div')
       div.className = 'p4-tile'
+      div.style.backgroundImage = `url(${bgImage})`
       if (pState.selectedIdx !== null && pState.selectedIdx === i) div.classList.add('selected')
       if (t.currentPos === t.correctPos) div.classList.add('in-place')
       div.style.backgroundPosition = `${col * 100}% ${row * 100}%`
@@ -62,13 +59,11 @@ export function PuzzleStarter(): void {
 
   goBtn.addEventListener('click', () => {
     gameEl.style.display = 'none'
-    style.remove()
     completeCurrentSpot()
   }, { once: true })
 
   document.getElementById('puzzle4-close')?.addEventListener('click', () => {
     gameEl.style.display = 'none'
-    style.remove()
     completeCurrentSpot()
   }, { once: true })
 

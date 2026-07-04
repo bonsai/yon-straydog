@@ -46,9 +46,6 @@ const fullDOM = `
     <div id="spot-hub">
       <div id="hub-top">
         <span id="hub-icon">🐕</span><span id="hub-title">Stray Dog</span>
-        <button id="hub-story-btn" class="hub-story-btn">📖</button>
-        <button id="hub-debug-btn" class="hub-story-btn debug-only">🐛</button>
-        <div id="hub-balls">⚪⚪⚪</div>
       </div>
       <div id="hub-grid"></div>
     </div>
@@ -290,11 +287,11 @@ describe('goToHub', () => {
     document.body.innerHTML = fullDOM
   })
 
-  it('sets phase to hub and opens spot-hub with 4 cards', () => {
+  it('sets phase to hub and opens spot-hub with 5 cards', () => {
     goToHub()
     expect(getPhase()).toBe('hub')
     const cards = document.getElementById('hub-grid')?.children
-    expect(cards?.length).toBe(4)
+    expect(cards?.length).toBe(5)
   })
 
   it('renders open cards for s0 and s1, locked for s2 and s3', () => {

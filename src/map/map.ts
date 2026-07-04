@@ -1,14 +1,20 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { SPOTS, type Spot } from '../story/spots'
+import { isTestMode } from '../test-mode'
 
 let map: L.Map | null = null
-let userMarker: L.CircleMarker | null = null
+let userMarker: L.Marker | null = null
 let dogMarker: L.Marker | null = null
 let spotMarkers: L.Marker[] = []
 let watchId: number | null = null
 let dogWanderId: number | null = null
-let onArrive: ((spot: Spot) => void) | null = null
+let dogSpot: Spot | null = null
+let onSpotClick: ((spot: Spot) => void) | null = null
+
+export function setOnSpotClick(cb: ((spot: Spot) => void) | null): void {
+  onSpotClick = cb
+}
 let arrivedSpots = new Set<string>()
 let isMockMode = false
 let lastUserPos: { lat: number; lng: number } | null = null
@@ -23,6 +29,13 @@ const DOG_ICON = L.divIcon({
   iconAnchor: [16, 16],
 })
 
+const USER_ICON = L.divIcon({
+  html: '<span style="font-size:1.5rem">👤</span>',
+  className: '',
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+})
+
 let forceMock = false
 
 export function setForceMock(v: boolean): void {
@@ -34,15 +47,16 @@ export function setOnArrive(cb: (spot: Spot) => void): void {
 }
 
 function isSpotUnlocked(id: string, completed: string[]): boolean {
+  if (isTestMode()) return true
   if (id === 's0') return true
-  if (id === 's1') return completed.includes('s0')
+  if (id === 's1') return completed.includes('s0') || localStorage.getItem('sd_intro_done') === 'true'
   if (id === 's2') return completed.includes('s1')
   if (id === 's3') return completed.includes('s2')
   if (id === 's4') return SPOTS.filter(s => s.game !== 'final').every(s => completed.includes(s.id))
   return false
 }
 
-export function startMap(arrivedIds: string[]): void {
+export function startMap(arrivedIds: string[], visibleIds?: string[]): void {
   arrivedSpots = new Set(arrivedIds)
   const wrap = document.getElementById('map-wrap')
   if (wrap) wrap.style.display = 'flex'
@@ -51,18 +65,38 @@ export function startMap(arrivedIds: string[]): void {
   if (!mapEl) return
   if (map) { map.invalidateSize(); return }
 
-  map = L.map(mapEl, { zoomControl: false }).setView([MOCK_POS.lat, MOCK_POS.lng], 17)
+  const accessible = visibleIds
+    ? SPOTS.filter(s => visibleIds.includes(s.id))
+    : SPOTS.filter(s => arrivedIds.includes(s.id) || isSpotUnlocked(s.id, arrivedIds))
+  const firstSpot = accessible.find(s => !arrivedSpots.has(s.id)) || SPOTS[0]
+
+  map = L.map(mapEl, { zoomControl: false }).setView([firstSpot.lat, firstSpot.lng], 17)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap',
   }).addTo(map)
 
-  const accessible = SPOTS.filter(s => arrivedIds.includes(s.id) || isSpotUnlocked(s.id, arrivedIds))
-
-  // Add unlocked spot markers
-  spotMarkers = accessible.filter(s => !arrivedSpots.has(s.id)).map(s => {
-    const marker = L.marker([s.lat, s.lng]).addTo(map!)
-    marker.bindPopup(`<b>${s.icon} ${s.name}</b>`)
+  // Add unlocked spot markers (first unvisited spot pulses)
+  const usedCoords = new Set<string>()
+  spotMarkers = accessible.filter(s => !arrivedSpots.has(s.id)).map((s, i) => {
+    const html = i === 0
+      ? `<div class="spot-pulse"><span>${s.icon}</span></div>`
+      : `<span style="font-size:1.5rem">${s.icon}</span>`
+    let { lat, lng } = s
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`
+    if (usedCoords.has(key)) { lat += 0.0002 * usedCoords.size; lng += 0.0002 * usedCoords.size }
+    usedCoords.add(key)
+    const marker = L.marker([lat, lng], {
+      icon: L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] }),
+    }).addTo(map!)
+    marker.bindPopup(() => {
+      const pos = lastUserPos ?? MOCK_POS
+      const dist = getDistance(pos.lat, pos.lng, s.lat, s.lng)
+      if (dist <= 10) {
+        return `<b>${s.icon} ${s.name}</b><br><span style="color:#4caf50;font-size:.7rem">📍 ${Math.round(dist)}m</span><br><a href="javascript:void(0)" onclick="window.__spotClick?.('${s.id}')" style="color:#ffd700;text-decoration:underline;font-size:.8rem">▶ 謎を解く</a>`
+      }
+      return `<b>${s.icon} ${s.name}</b><br><span style="color:#888;font-size:.7rem">📡 ${Math.round(dist)}m 先</span><br><a href="javascript:void(0)" onclick="window.__moveTo?.('${s.id}')" style="color:#4fc3f7;text-decoration:underline;font-size:.8rem">📍 ここへ移動</a>`
+    })
     return marker
   })
 
@@ -73,11 +107,10 @@ export function startMap(arrivedIds: string[]): void {
     }).addTo(map!).bindPopup(`✅ ${s.name}`)
   })
 
-  // User marker
-  userMarker = L.circleMarker([MOCK_POS.lat, MOCK_POS.lng], {
-    radius: 8, color: '#ffd700', fillColor: '#ffd700', fillOpacity: 0.8,
-  }).addTo(map)
+  // User icon at first unlocked spot
+  userMarker = L.marker([firstSpot.lat, firstSpot.lng], { icon: USER_ICON, zIndexOffset: 500 }).addTo(map)
   userMarker.bindPopup('📍 現在地')
+  lastUserPos = { lat: firstSpot.lat, lng: firstSpot.lng }
 
   // Dog marker (wanders between unvisited, accessible spots)
   const unvisited = accessible.filter(s => !arrivedSpots.has(s.id))
@@ -96,18 +129,28 @@ export function startMap(arrivedIds: string[]): void {
 }
 
 function startDogWander(unvisited: Spot[]): void {
-  let idx = 0
-  dogWanderId = window.setInterval(() => {
+  let currentSpot: Spot | null = null
+  const scheduleNext = () => {
     if (!dogMarker || unvisited.length === 0) return
-    const spot = unvisited[idx % unvisited.length]
+    const spot = unvisited[Math.floor(Math.random() * unvisited.length)]
+    if (currentSpot && spot.id === currentSpot.id && Math.random() > 0.3) {
+      // stay at current spot a bit longer
+      dogWanderId = window.setTimeout(scheduleNext, 2000 + Math.random() * 4000)
+      return
+    }
+    currentSpot = spot
     dogMarker.setLatLng([spot.lat, spot.lng])
-    idx++
-  }, 4000)
+    dogMarker.setPopupContent(`🐕 ${spot.icon} ${spot.name}？`)
+    dogSpot = spot
+    // random pause: 1-8 sec
+    dogWanderId = window.setTimeout(scheduleNext, 1000 + Math.random() * 7000)
+  }
+  scheduleNext()
 }
 
 export function stopMap(): void {
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null }
-  if (dogWanderId !== null) { clearInterval(dogWanderId); dogWanderId = null }
+  if (dogWanderId !== null) { clearTimeout(dogWanderId); dogWanderId = null }
   if (map) { map.remove(); map = null }
   spotMarkers = []
   userMarker = null

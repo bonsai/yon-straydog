@@ -1,5 +1,6 @@
 import { type Step, getCurrentStep, advanceStep, hasMoreSteps, clearSteps } from '../game-state'
 import { STORY_SCENES } from './spots'
+import { appendMemo } from '../map/hub'
 
 // ============================================================================
 // Step-based adventure
@@ -8,6 +9,12 @@ import { STORY_SCENES } from './spots'
 let active = false
 let onFinish: (() => void) | null = null
 let autoTimer: number | null = null
+let typingTimer: number | null = null
+let typingLineIdx = 0
+let typingCharIdx = 0
+let typingLines: string[] = []
+let typingCurrentSpan: HTMLSpanElement | null = null
+let pendingNext = false
 
 export function startAdventure(onComplete?: () => void): void {
   onFinish = onComplete ?? null
@@ -18,13 +25,19 @@ export function startAdventure(onComplete?: () => void): void {
 export function stopAdventure(): void {
   active = false
   if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null }
+  if (typingTimer !== null) { clearTimeout(typingTimer); typingTimer = null }
   const el = document.getElementById('adventure-overlay')
   if (el) el.style.display = 'none'
   clearSteps()
 }
 
 function goNext(): void {
-  if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null }
+  if (pendingNext) {
+    pendingNext = false
+    if (typingTimer !== null) { clearTimeout(typingTimer); typingTimer = null }
+    finishTyping()
+  }
+  if (typingTimer !== null) { clearTimeout(typingTimer); typingTimer = null }
   const overlay = document.getElementById('adventure-overlay')
   if (!overlay) return
   const next = advanceStep()
@@ -39,6 +52,88 @@ function goNext(): void {
       onFinish?.()
     }
   }
+}
+
+function finishTyping(): void {
+  const textEl = document.getElementById('adventure-text')
+  if (!textEl) return
+  // Show all remaining text instantly
+  textEl.textContent = typingLines.join('\n')
+  typingTimer = null
+  typingLines = []
+  typingLineIdx = 0
+  typingCharIdx = 0
+  typingCurrentSpan = null
+  // Enable tap to continue
+  const overlay = document.getElementById('adventure-overlay')
+  if (overlay) overlay.onclick = goNext
+}
+
+function startTyping(text: string): void {
+  typingLines = text.split('\n')
+  typingLineIdx = 0
+  typingCharIdx = 0
+  const textEl = document.getElementById('adventure-text')
+  if (!textEl) return
+  textEl.textContent = ''
+  typingCurrentSpan = null
+  pendingNext = false
+
+  const tick = () => {
+    if (!active) return
+    if (typingLineIdx >= typingLines.length) {
+      // Done typing
+      typingTimer = null
+      typingLines = []
+      const overlay = document.getElementById('adventure-overlay')
+      if (overlay) overlay.onclick = goNext
+      return
+    }
+    const line = typingLines[typingLineIdx]
+
+    if (typingCharIdx === 0) {
+      if (line === '') {
+        textEl.appendChild(document.createElement('br'))
+        typingLineIdx++
+        typingTimer = window.setTimeout(tick, 80)
+        return
+      }
+      const span = document.createElement('span')
+      textEl.appendChild(span)
+      typingCurrentSpan = span
+      const advance = () => {
+        if (typingCharIdx >= line.length) {
+          textEl.appendChild(document.createElement('br'))
+          typingCharIdx = 0
+          typingLineIdx++
+          if (typingLineIdx < typingLines.length) {
+            typingTimer = window.setTimeout(tick, 120)
+          } else {
+            typingTimer = null
+            typingLines = []
+            const overlay = document.getElementById('adventure-overlay')
+            if (overlay) overlay.onclick = goNext
+          }
+          return
+        }
+        if (typingCurrentSpan) {
+          typingCurrentSpan.textContent += line[typingCharIdx]
+        }
+        typingCharIdx++
+        typingTimer = window.setTimeout(advance, 30)
+      }
+      advance()
+    }
+  }
+
+  pendingNext = true
+  const overlay = document.getElementById('adventure-overlay')
+  if (overlay) overlay.onclick = () => {
+    // Skip typing, show full text
+    if (typingTimer !== null) { clearTimeout(typingTimer); typingTimer = null }
+    finishTyping()
+  }
+  typingTimer = window.setTimeout(tick, 200)
 }
 
 function showStep(): void {
@@ -60,16 +155,21 @@ function showStep(): void {
   overlay.onclick = null
 
   if (step.type === 'text') {
-    textEl.textContent = step.text ?? ''
     choicesEl.style.display = 'none'
-    overlay.onclick = goNext
+    if (step.text) {
+      appendMemo(step.text)
+      startTyping(step.text)
+    }
   } else if (step.type === 'choice') {
-    textEl.textContent = step.text ?? ''
+    textEl.innerHTML = ''
+    const p = document.createElement('p')
+    p.textContent = step.text ?? ''
+    textEl.appendChild(p)
     choicesEl.style.display = 'flex'
     const yesBtn = document.getElementById('adv-yes') as HTMLElement | null
     const noBtn = document.getElementById('adv-no') as HTMLElement | null
-    if (yesBtn) yesBtn.onclick = goNext
-    if (noBtn) noBtn.onclick = () => {}
+    if (yesBtn) { yesBtn.textContent = step.yesLabel ?? 'はい'; yesBtn.onclick = goNext }
+    if (noBtn) { noBtn.textContent = step.noLabel ?? 'いいえ'; noBtn.onclick = () => {} }
   } else if (step.type === 'action') {
     overlay.style.display = 'none'
     active = false

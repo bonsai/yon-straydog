@@ -3,15 +3,16 @@ import coupleImage from '/0.jpg'
 import dogImage from '/gdog.png'
 import { useDogStore } from './store'
 import { STORY_SCENES, INTRO_LINES } from './story/spots'
-import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools } from './map/hub'
+import { startSpotHub, registerGameStarters, setCurrentGameSpot, setOnSpotCleared, getBadgeCount, setupTools, showTools, isSpotUnlocked } from './map/hub'
 import { setPhase, setSteps, buildIntroSteps, buildStorySteps } from './game-state'
 import { startAdventure, setupStoryButtons, startStoryScene } from './story/adventure'
 import { SPOTS, SCENE_REUNION, SPOT_SCENE_INDEX, type Spot, type SpotId } from './story/spots'
-import { startMap, setOnArrive, stopMap } from './map/map'
+import { startMap, setOnArrive, stopMap, setForceMock, setOnSpotClick, mockMoveTo } from './map/map'
 import { ensureResumed, playTyping, playCorrect, playWrong, playBark, playComplete } from './game/sound'
 import { setupDebugAPI } from './debug-api'
-import { autoSave } from './save'
 import { PuzzleStarter } from './game/puzzle-starter'
+import { registerScene, goToScene, routeFromHash } from './scenes'
+import { isTestMode } from './test-mode'
 
 function getId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id) as T | null
@@ -53,25 +54,42 @@ export function showScreen(id: string): void {
 // =====================================================
 let introTypingTimer: number | null = null
 
+function showPostPuzzleChoice(): void {
+  setPhase('story')
+  const s0 = SPOTS.find(s => s.id === 's0')!
+  const steps = buildStorySteps('🐕', '迷い犬', [
+    'まだちいさくて、心配なんです。どこへ行ってしまったんだろう。まだそんなに遠くに行ってないと思うのですが。よろしくお願いします。',
+  ],   () => {
+    goToScene(15)
+  }, 'hub', 'とりあえず近くを探してみよう', s0.choiceYesLabel, s0.choiceNoLabel)
+  setSteps(steps)
+  startAdventure()
+}
+
 function startPuzzle4(): void {
+  setCurrentGameSpot('s0')
   const intro = document.getElementById('intro')
   if (intro) intro.classList.remove('active')
   PuzzleStarter()
-  // After puzzle solved, go to hub
+  const onDone = () => {
+    const p4 = document.getElementById('puzzle4')
+    if (p4) p4.style.display = 'none'
+    if (!useDogStore.getState().completed.includes('s0')) {
+      useDogStore.getState().completeSpot('s0')
+    }
+  }
   const goBtn = document.getElementById('p4-go') as HTMLButtonElement
   if (goBtn) {
     goBtn.addEventListener('click', () => {
-      const p4 = document.getElementById('puzzle4')
-      if (p4) p4.style.display = 'none'
-      goToHub()
+      onDone()
+      showPostPuzzleChoice()
     }, { once: true })
   }
   const closeBtn = document.getElementById('puzzle4-close')
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-      const p4 = document.getElementById('puzzle4')
-      if (p4) p4.style.display = 'none'
-      goToHub()
+      onDone()
+      showPostPuzzleChoice()
     }, { once: true })
   }
 }
@@ -82,11 +100,8 @@ function startIntro(): void {
   showScreen('intro')
   showTools(false)
   if (useDogStore.getState().introDone) { finishIntroState(); return }
-
-  const bgEl = getId('intro-bg')
-  bgEl.style.background = `url(${coupleImage}) center/contain no-repeat #0a0a0f`
-  bgEl.classList.add('faded', 'visible')
-  bgEl.style.opacity = '1'
+  const imgEl = getId<HTMLImageElement>('intro-img')
+  imgEl.style.opacity = '1'
 
   const textEl = getId('intro-text')
   const skipBtn = getId<HTMLElement>('intro-skip')
@@ -120,8 +135,7 @@ function startIntro(): void {
     if (charIdx === 0) {
       // switch to dog image when couple hands over the photo
       if (lineIdx === 10) {
-        const bgEl2 = document.getElementById('intro-bg')
-        if (bgEl2) { bgEl2.style.backgroundImage = `url(${dogImage})`; bgEl2.style.opacity = '1' }
+        getId<HTMLImageElement>('intro-img').src = dogImage
       }
       const span = document.createElement('span')
       if (line.color) span.style.color = line.color
@@ -146,26 +160,46 @@ function startIntro(): void {
 }
 
 function finishIntroState(): void {
-  const bgEl = document.getElementById('intro-bg')
-  const skipBtn = document.getElementById('intro-skip')
-  if (bgEl) { bgEl.style.backgroundImage = `url(${coupleImage})`; bgEl.classList.add('faded', 'visible'); bgEl.style.opacity = '1' }
-  if (skipBtn) skipBtn.style.display = 'block'; skipBtn!.onclick = () => {}
-  const textEl = document.getElementById('intro-text')
-  if (textEl) textEl.style.display = 'block'
+  const imgEl = getId<HTMLImageElement>('intro-img')
+  imgEl.src = coupleImage
+  imgEl.style.opacity = '1'
+  getId('intro-skip').style.display = 'block'
+  getId('intro-skip').onclick = () => {}
+  getId('intro-text').style.display = 'block'
   const bottomBar = qs<HTMLElement>('#intro .bottom-bar')
   if (bottomBar) bottomBar.style.display = 'none'
 
-  setTimeout(() => goToHub(), 100)
+  setTimeout(() => goToScene(15), 800)
 }
 
 // =====================================================
 // SPOT FLOW
 // =====================================================
+// Scene ID layout:
+// 0: intro  1: s0-game  2: s0-result(=choice)  3: hub
+// s0: 0=intro 1=game 2=result  (compact)
+// s1: 4=story  5=game  6=result
+// s2: 7=story  8=game  9=result
+// s3: 10=story 11=game 12=result
+// s4: 13=story 14=complete
+
+const SPOT_SCENE_BASE: Record<string, number> = { s0: 0, s1: 4, s2: 7, s3: 10, s4: 13 }
+
+function spotSceneId(spotId: string, suffix: 'story' | 'game' | 'result'): number {
+  if (spotId === 's0') {
+    return suffix === 'game' ? 1 : suffix === 'story' ? 0 : 2
+  }
+  const base = SPOT_SCENE_BASE[spotId]
+  if (base == null) return 3 // hub (debug)
+  if (spotId === 's4') return suffix === 'story' ? base : base + 1
+  return suffix === 'story' ? base : suffix === 'game' ? base + 1 : base + 2
+}
+
 function startSpotMap(spotId: string): void {
   setPhase('play')
   showTools(true)
   const spot = SPOTS.find(s => s.id === spotId)
-  if (!spot) { goToHub(); return }
+  if (!spot) { goToScene(15); return }
   const spotHub = document.getElementById('spot-hub')
   if (spotHub) spotHub.classList.remove('open')
   setCurrentGameSpot(spotId)
@@ -179,23 +213,18 @@ function startSpotMap(spotId: string): void {
   startMap(useDogStore.getState().completed)
 }
 
-export function showClearedStory(spotId: string): void {
+export function showClearedStory(spotId: string, opts?: { postGame?: boolean }): void {
   const spot = SPOTS.find(s => s.id === spotId)
-  if (!spot) { goToHub(); return }
-  const badgeCount = useDogStore.getState().completed.length
-  const totalBadges = SPOTS.filter(s => s.game !== 'final').length
+  if (!spot) { goToScene(15); return }
   const paras = spot.storyParagraphs.filter(p => p)
+  const postGame = opts?.postGame ?? false
+  const choiceText = postGame ? 'つづける' : spot.hint
+  const nextScene = postGame ? spotSceneId(spotId, 'result') : spotSceneId(spotId, 'game')
   const steps = buildStorySteps(spot.icon, spot.name, paras, () => {
-    showResultScreen(
-      spot.badge || spot.icon,
-      spot.badge ? 'バッジを獲得！' : spot.name,
-      spot.badgeName || '',
-      `${badgeCount}/${totalBadges} のヒント玉を収集`
-    )
-  }, 'hub', 'つづける')
+    goToScene(nextScene)
+  }, 'hub', choiceText, spot.choiceYesLabel, spot.choiceNoLabel)
   setSteps(steps)
   startAdventure()
-  autoSave(0)
 }
 
 export function showResultScreen(icon: string, title: string, badge: string, subtitle: string): void {
@@ -214,7 +243,13 @@ export function showResultScreen(icon: string, title: string, badge: string, sub
   const btn = getId<HTMLButtonElement>('r-btn')
   btn.onclick = () => {
     r.style.display = 'none'
-    goToHub()
+    const completed = useDogStore.getState().completed
+    const next = SPOTS.find(s => s.game !== 'final' && !completed.includes(s.id) && isSpotUnlocked(s.id, completed))
+    if (next) {
+      goToScene(spotSceneId(next.id, 'story'))
+    } else {
+      goToScene(15)
+    }
   }
 }
 
@@ -232,7 +267,41 @@ export function showCompleteScreen(): void {
   playComplete()
   playBark()
   confetti()
-  autoSave(0)
+}
+
+// ── Scene Registry (module level — always available) ──
+registerScene({ id: 0, name: 'intro', enter: startIntro })
+registerScene({ id: 1, name: 's0-game', enter: startPuzzle4 })
+registerScene({ id: 2, name: 's0-result', enter: showPostPuzzleChoice })
+registerScene({ id: 3, name: 'hub', enter: goToHub }) // debug only
+registerScene({ id: 15, name: 'map', enter: () => {
+  showTools(true)
+  setForceMock(true)
+  setOnSpotClick((spot) => goToScene(spotSceneId(spot.id, 'story')));
+  (window as any).__spotClick = (id: string) => goToScene(spotSceneId(id, 'story'));
+  (window as any).__moveTo = (id: string) => {
+    mockMoveTo(id)
+  }
+  startMap(useDogStore.getState().completed)
+}})
+for (const spot of SPOTS) {
+  if (spot.id === 's0') continue // s0 registers above
+  if (spot.id === 's4') {
+    registerScene({ id: 13, name: 's4-story', enter: () => showClearedStory('s4') })
+    registerScene({ id: 14, name: 's4-complete', enter: showCompleteScreen })
+  } else {
+    const base = SPOT_SCENE_BASE[spot.id]
+    registerScene({ id: base, name: `${spot.id}-story`, enter: () => showClearedStory(spot.id) })
+    registerScene({ id: base + 1, name: `${spot.id}-game`, enter: () => {
+      setCurrentGameSpot(spot.id); showTools(false); setPhase('play')
+      const starter = (window as any).__gameStarters?.[spot.id]
+      if (starter) starter()
+    }})
+    registerScene({ id: base + 2, name: `${spot.id}-result`, enter: () => {
+      const st = useDogStore.getState()
+      showResultScreen(spot.badge || spot.icon, spot.badge ? 'バッジを獲得！' : spot.name, spot.badgeName || '', `${st.completed.length}/${SPOTS.filter(s => s.game !== 'final').length} のヒント玉を収集`)
+    }})
+  }
 }
 
 export function confetti(): void {
@@ -332,20 +401,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTools()
   setupDebugAPI()
 
-  if (location.hash === '#debug') {
+  // Auto-enable test mode on Vercel
+  if (isTestMode()) {
     enableDebugMode()
+    setForceMock(true)
   }
 
-  // Wire story mode button
-  document.getElementById('hub-story-btn')?.addEventListener('click', () => {
-    openStoryModal(0)
-  })
+  if (location.hash === '#reset') {
+    localStorage.clear()
+    location.hash = ''
+    location.reload()
+    return
+  }
 
   // Wire debug panel
-  document.getElementById('hub-debug-btn')?.addEventListener('click', () => {
-    renderDebugPanel()
-    document.getElementById('debug-panel')?.classList.add('open')
+  document.getElementById('hub-reset-btn')?.addEventListener('click', () => {
+    useDogStore.getState().reset()
+    goToScene(0)
   })
+
   document.getElementById('debug-close')?.addEventListener('click', () => {
     document.getElementById('debug-panel')?.classList.remove('open')
   })
@@ -359,11 +433,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const id = card.dataset.id
       if (!id) return
 
-      if (id === 's4' && getBadgeCount(useDogStore.getState().completed) >= 4) {
+      if (id === 's4' && (isTestMode() || getBadgeCount(useDogStore.getState().completed) >= 4)) {
         useDogStore.getState().completeSpot('s3')
         const spot = SPOTS.find(s => s.id === 's3')!
         const allParas = [...spot.storyParagraphs.filter(p => p), '', ...SCENE_REUNION.paragraphs.filter(p => p)]
-        const steps = buildStorySteps('🐕', '再会', allParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
+        const steps = buildStorySteps('🐕', '再会', allParas, () => goToScene(14), 'complete', '結果を見るか？')
         setSteps(steps)
         startAdventure()
         return
@@ -372,7 +446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const store = useDogStore.getState()
       if (store.completed.includes(id)) return
 
-      startSpotMap(id)
+      goToScene(spotSceneId(id, 'story'))
     })
   }
 
@@ -381,20 +455,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const store = useDogStore.getState()
     if (store.completed.length >= SPOTS.length) {
       const finalParas = SCENE_REUNION.paragraphs.filter(p => p)
-      const steps = buildStorySteps('🐕', '再会', finalParas, () => showCompleteScreen(), 'complete', '結果を見るか？')
+      const steps = buildStorySteps('🐕', '再会', finalParas, () => goToScene(14), 'complete', '結果を見るか？')
       setSteps(steps)
       startAdventure()
     } else {
-      showClearedStory(spotId)
+      goToScene(spotSceneId(spotId, 'result'))
     }
   })
 
-  const { introDone } = useDogStore.getState()
-  if (introDone) {
-    goToHub()
-  } else {
-    startIntro()
-  }
+  // Always start from intro, no auto-restore
+  routeFromHash()
 
   // Share button
   document.getElementById('complete-share-btn')?.addEventListener('click', shareResult)
@@ -404,7 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideEl('complete')
     stopMap()
     useDogStore.getState().reset()
-    startIntro()
+    goToScene(0)
   })
 
   // Register service worker
