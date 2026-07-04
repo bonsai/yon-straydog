@@ -108,12 +108,10 @@ export function startMap(arrivedIds: string[], visibleIds?: string[]): void {
     }).addTo(map!).bindPopup(`✅ ${s.name}`)
   })
 
-  // User icon at first unlocked spot
-  userMarker = L.marker([firstSpot.lat, firstSpot.lng], { icon: USER_ICON, zIndexOffset: 500 }).addTo(map)
-  userMarker.bindPopup('📍 現在地')
+  // User icon removed - 現在地不要
   lastUserPos = { lat: firstSpot.lat, lng: firstSpot.lng }
 
-  // Dog marker (wanders between unvisited, accessible spots)
+  // Dog marker (wanders between unvisited, accessible spots continuously)
   const unvisited = accessible.filter(s => !arrivedSpots.has(s.id))
   if (unvisited.length > 0) {
     const start = unvisited[Math.floor(Math.random() * unvisited.length)]
@@ -134,17 +132,12 @@ function startDogWander(unvisited: Spot[]): void {
   const scheduleNext = () => {
     if (!dogMarker || unvisited.length === 0) return
     const spot = unvisited[Math.floor(Math.random() * unvisited.length)]
-    if (currentSpot && spot.id === currentSpot.id && Math.random() > 0.3) {
-      // stay at current spot a bit longer
-      dogWanderId = window.setTimeout(scheduleNext, 2000 + Math.random() * 4000)
-      return
-    }
     currentSpot = spot
     dogMarker.setLatLng([spot.lat, spot.lng])
     dogMarker.setPopupContent(`🐕 ${spot.icon} ${spot.name}？`)
     dogSpot = spot
-    // random pause: 1-8 sec
-    dogWanderId = window.setTimeout(scheduleNext, 1000 + Math.random() * 7000)
+    // 常に動き続ける - 0.5〜2秒で次へ
+    dogWanderId = window.setTimeout(scheduleNext, 500 + Math.random() * 1500)
   }
   scheduleNext()
 }
