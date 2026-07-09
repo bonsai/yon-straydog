@@ -1,4 +1,4 @@
-# Stray Dog Recap — 2026-07-04 Session
+# Stray Dog Recap — 2026-07-05 Session
 
 ## GPS / Spots
 
@@ -25,12 +25,27 @@
 - Removed from `spots.ts` s3: 「私たち、親になるんだね」
 - New text: `金の像の前で立ち止まる。犬は──家に帰っている。`
 
+## s4 Game (Final Puzzle)
+
+**Bug**: 「4つ目の謎に行ったが何も起こらない」
+- **Root cause**: `s4-game.ts` used HTML5 Drag & Drop API (`draggable` attribute) — does NOT work on mobile/touch devices
+- **Fix**: Rewrote to tap-to-select + tap-to-match
+  1. Tap right block → selected (yellow border + glow)
+  2. Tap left slot → match check
+  3. Success: both turn green, `matchedCount++`
+  4. Wrong: left slot blinks red (`shake` animation)
+  5. 3/3 matches → `completeCurrentSpot()` → ending
+
+**Files changed**:
+- `src/game/s4-game.ts` — full rewrite (66 lines, tap logic)
+- `src/style.css` — `.selected` + `.wrong` styles added
+
 ## Build & Deploy
 
 | step | result |
 |------|--------|
 | Build (Vite) | 232 kB JS ✅ |
-| GitHub push | `6dc20d7` ✅ |
+| GitHub push | `f4e19e9` ✅ |
 | Surge | `straydog.surge.sh` ✅ |
 
 ## URLs
